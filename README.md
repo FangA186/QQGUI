@@ -1,3 +1,6 @@
+# QQGUI
+微信桌面应用程序
+=======
 # README
 
 ## About
@@ -17,3 +20,4 @@ to this in your browser, and you can call your Go code from devtools.
 ## Building
 
 To build a redistributable, production mode package, use `wails build`.
+>>>>>>> d9925a1d530907824c42cdc9b0e000e7905e89cb
