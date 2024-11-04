@@ -1,7 +1,10 @@
 package sqlconfig
 
 import (
+	"QQGUI/model"
 	"context"
+	"encoding/json"
+	"fmt"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -18,9 +21,14 @@ func InitRedis() {
 }
 
 // PublishMessage 发布消息到 Redis
-func PublishMessage(channel string, message string) {
-	err := rdb.Publish(context.Background(), channel, message).Err() // 发布消息
+func PublishMessage(channel string, message model.Message) {
+	marshal, err := json.Marshal(message)
 	if err != nil {
+		return
+	}
+	err1 := rdb.Publish(context.Background(), channel, marshal).Err() // 发布消息
+	if err1 != nil {
+		fmt.Println(err1)
 		// 处理错误
 		return // 如果出错则返回
 	}

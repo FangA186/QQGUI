@@ -34,6 +34,10 @@ export function Login(arg1, arg2) {
   return window['go']['api']['MyApp']['Login'](arg1, arg2);
 }
 
+export function MessageList(arg1, arg2, arg3) {
+  return window['go']['api']['MyApp']['MessageList'](arg1, arg2, arg3);
+}
+
 export function Receive(arg1, arg2, arg3, arg4) {
   return window['go']['api']['MyApp']['Receive'](arg1, arg2, arg3, arg4);
 }

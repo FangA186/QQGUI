@@ -8,7 +8,8 @@ import {
   GetApplicationRecord,
   GetConsentList,
   GetIsSpeakUserInfo,
-  Receive
+  Receive,
+    MessageList
 } from "../../wailsjs/go/api/MyApp.js"
 // import { useMessageStore } from '../store/messages.js'; // 根据你的文件结构调整路径
 
@@ -27,6 +28,7 @@ const oneinfo = ref([])
 const show = ref(false)
 const content = ref("")
 let socket
+const messageList = ref([])
 const clickEmoji = (val) => {
   content.value = content.value + val
 }
@@ -63,7 +65,6 @@ const GenerateRoomID = (uuid1,uuid2)=>{
   return uuid2 + "_" + uuid1
 }
 const sendMessage = async () => {
-  console.log(oneinfo.value)
   await Receive(localStorage.getItem("userID"),
       JSON.stringify(oneinfo.value.friend_id),
       oneinfo.value.friend_avatar,
@@ -79,32 +80,44 @@ const sendMessage = async () => {
   content.value = ""
 }
 const dialogue = (item) => {
-  oneinfo.value = item
-  show.value = true
+  oneinfo.value = item;
+  show.value = true;
   const userId = localStorage.getItem("userID"); // 用户 ID
   const userIDUUID = localStorage.getItem("uuid");
-  const friendIDUUID = item.friend_uuid
+  const friendIDUUID = item.friend_uuid;
   const isGroup = 0; // 是否为群聊
-  const wsUrl = `ws://127.0.0.1:8080/ws?user_id=${userId}&userIDUUID=${userIDUUID}
-  &friendIDUUID=${friendIDUUID}&IsGroup=${isGroup}&roomid=${GenerateRoomID(userIDUUID,friendIDUUID)}`;
+  const roomid = GenerateRoomID(userIDUUID, friendIDUUID);
+
+  // 检查当前 socket 是否已经存在且处于打开状态
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    console.log("WebSocket 已经连接，无需重新建立连接");
+    return; // 如果连接已经打开，直接返回
+  }
+
+  // 建立新的 WebSocket 连接
+  const wsUrl = `ws://127.0.0.1:8080/ws?user_id=${userId}&userIDUUID=${userIDUUID}&friendIDUUID=${friendIDUUID}&IsGroup=${isGroup}&roomid=${roomid}`;
   socket = new WebSocket(wsUrl);
 
-  socket.onopen = function () {
+  socket.onopen = async function () {
     console.log("连接已建立");
+    const res = await MessageList(parseInt(userId),oneinfo.value.friend_id,roomid)
+    console.log(res)
   };
 
   socket.onmessage = function (event) {
-    console.log(event.data)
+    console.log(JSON.parse(event.data));
   };
 
   socket.onclose = function () {
     console.log("连接已关闭");
+    socket = null; // 连接关闭时，清空 socket 变量
   };
 
   socket.onerror = function (error) {
     console.error("WebSocket 错误:", error);
   };
-}
+};
+
 onMounted(() => {
   consentFriend()
   getisspeakuserinfo()

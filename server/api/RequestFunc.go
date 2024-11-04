@@ -50,6 +50,7 @@ type MyApp struct {
 	SearchService          *SearchUserService
 	SpeakService           *IsSpeakService
 	IsSpeakUserInfoService *GetIsSpeakUserInfoService
+	GetMessageListService  *MessageService
 }
 
 func NewMyApp(db *gorm.DB) *MyApp {
@@ -166,7 +167,76 @@ func (a *MyApp) RegisterFunc(username, pwd string) map[string]interface{} {
 //
 // FriendList 获取好友列表
 func (a *MyApp) StartHTTPServer() {
-	http.HandleFunc("/sse", HandleSSE)
+	http.HandleFunc("/sse", func(w http.ResponseWriter, r *http.Request) {
+		// 允许的源
+		w.Header().Set("Access-Control-Allow-Origin", "*") // 或者指定具体的域名
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+		// 处理 OPTIONS 请求（CORS 预检请求）
+		if r.Method == http.MethodOptions {
+			return // 直接返回
+		}
+		fmt.Println("这个是sse")
+		// 获取当前用户的ID
+		userID := r.URL.Query().Get("user_id")
+		ctx := r.Context()
+
+		if userID == "" {
+			fmt.Println("缺少用户ID")
+			http.Error(w, "缺少用户ID", http.StatusBadRequest)
+			return
+		}
+
+		// 确保连接支持流式响应
+		flusher, ok := w.(http.Flusher)
+		if !ok {
+			fmt.Println("当前连接不支持流式传输")
+			http.Error(w, "当前连接不支持流式传输", http.StatusInternalServerError)
+			return
+		}
+
+		// 设置 HTTP 头信息，告知客户端这是 SSE 通道
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set("Connection", "keep-alive")
+
+		// 为当前用户创建一个消息通道
+		messageChan := make(chan string)
+
+		// 将此用户的 SSE 连接加入到映射表中
+		clientsLock.Lock()
+		clients[userID] = messageChan
+		clientsLock.Unlock()
+		// 退出函数时，移除该用户的 SSE 连接，防止内存泄漏
+		defer func() {
+			clientsLock.Lock()
+			delete(clients, userID)
+			clientsLock.Unlock()
+			close(messageChan) // 关闭通道，避免泄漏
+		}()
+
+		// 启动一个 goroutine 来异步处理消息接收和推送
+		go func() {
+			for {
+				select {
+				case message := <-messageChan:
+					// 当有消息时，将消息发送给客户端
+					_, err := fmt.Fprintf(w, "data: %s\n\n", message)
+					if err != nil {
+						fmt.Println(err)
+						return
+					}
+					flusher.Flush() // 刷新缓冲区
+				case <-r.Context().Done():
+					return
+				}
+			}
+		}()
+
+		// 保持连接
+		<-ctx.Done() // 等待客户端断开连接
+	})
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Jinlaile ")
 		websocket.HandleWebSocket(w, r, a.Db)
@@ -177,9 +247,10 @@ func (a *MyApp) StartHTTPServer() {
 	http.Handle("/favicon.ico", http.FileServer(http.Dir(".")))
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
-		fmt.Printf("Error starting server: %v\n", err)
+		fmt.Printf("发生错误了: %v\n", err)
 		return
 	}
+	fmt.Println("8080已开启")
 }
 func (a *MyApp) FriendList(userID string) FriendRes {
 	// 创建 FriendService 实例
@@ -261,6 +332,7 @@ func (a *MyApp) Receive(userID, FriendID, Avatar, Username string) {
 		}
 		jsonStr, _ := json.Marshal(message1)
 		messageChan <- string(jsonStr)
+		fmt.Println("数据载荷:", message1)
 	} else {
 		// 当未找到好友的 SSE 通道时执行的逻辑
 		fmt.Printf("未找到好友的 SSE 通道，friendID: %s\n", FriendID)
@@ -280,62 +352,6 @@ func (a *MyApp) ConsentFriend(userID, friendID, consent string) string {
 	}
 
 	return message
-}
-
-// HandleSSE 处理 SSE 连接
-func HandleSSE(w http.ResponseWriter, r *http.Request) {
-	// 获取当前用户的ID
-	userID := r.URL.Query().Get("user_id")
-	ctx := r.Context()
-
-	if userID == "" {
-		http.Error(w, "缺少用户ID", http.StatusBadRequest)
-		return
-	}
-
-	// 确保连接支持流式响应
-	flusher, ok := w.(http.Flusher)
-	if !ok {
-		http.Error(w, "当前连接不支持流式传输", http.StatusInternalServerError)
-		return
-	}
-
-	// 设置 HTTP 头信息，告知客户端这是 SSE 通道
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
-
-	// 为当前用户创建一个消息通道
-	messageChan := make(chan string)
-
-	// 将此用户的 SSE 连接加入到映射表中
-	clientsLock.Lock()
-	clients[userID] = messageChan
-	clientsLock.Unlock()
-	// 退出函数时，移除该用户的 SSE 连接，防止内存泄漏
-	defer func() {
-		clientsLock.Lock()
-		delete(clients, userID)
-		clientsLock.Unlock()
-		close(messageChan) // 关闭通道，避免泄漏
-	}()
-
-	// 启动一个 goroutine 来异步处理消息接收和推送
-	go func() {
-		for {
-			select {
-			case message := <-messageChan:
-				// 当有消息时，将消息发送给客户端
-				fmt.Fprintf(w, "data: %s\n\n", message)
-				flusher.Flush() // 刷新缓冲区
-			case <-r.Context().Done():
-				return
-			}
-		}
-	}()
-
-	// 保持连接
-	<-ctx.Done() // 等待客户端断开连接
 }
 
 // SearchUser 搜索用户并添加 is_friend 字段
@@ -397,9 +413,17 @@ func (a *MyApp) IsSpeak(userID, friendID string) map[string]interface{} {
 	}
 }
 
+// GetIsSpeakUserInfo 获取到已经聊过天了的用户
 func (a *MyApp) GetIsSpeakUserInfo(userID string) []ApplyForResponse {
-	fmt.Println("suerId", userID)
 	getSpeak := &GetIsSpeakUserInfoService{Db: a.Db}
 	res := getSpeak.GetIsSpeakUser(userID)
 	return res
+}
+
+func (a *MyApp) MessageList(userID, friendID uint, roomID string) []model.Message {
+	getMessage := &MessageService{Db: a.Db}
+	list := getMessage.GetMessages(userID, friendID, roomID)
+	fmt.Println(userID, friendID)
+	fmt.Println(list)
+	return list
 }

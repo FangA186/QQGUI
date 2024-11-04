@@ -29,16 +29,24 @@ watch(
                 // 处理接收到的数据
             });
             // 用户ID存在时，创建 SSE 连接
-            const eventSource = new EventSource(`/api/sse?user_id=${userId}`);
+            const eventSource = new EventSource(`http://wails.localhost:8080/sse?user_id=${userId}`);
+            // 连接成功时的提示
+            console.log(eventSource)
+            eventSource.onopen = function () {
+                console.log('SSE 连接成功');
+                console.log(eventSource)
+            };
             eventSource.onmessage = function (event) {
                 // messageStore.addMessage(JSON.parse(event.data)); // 将消息存储到 store 中
                 console.log(JSON.parse(event.data))
                 const info = JSON.parse(event.data)
                 if (info.i===0){
                     console.log(789)
+                    console.log(eventSource.readyState)
                     open1(JSON.parse(event.data))
                 }else{
                     console.log(456)
+                    console.log(eventSource)
                     open2(JSON.parse(event.data))
                 }
             };

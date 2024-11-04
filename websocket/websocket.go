@@ -11,10 +11,15 @@ import (
 	"sync"
 )
 
+type websocketInfo struct {
+	WS     *websocket.Conn
+	UserID string
+}
+
 // 定义全局变量
 var (
-	clients = make(map[*websocket.Conn]bool) // 存储当前连接的 WebSocket 客户端
-	mu      sync.Mutex                       // 用于保护对 clients 的并发访问
+	clients []websocketInfo
+	mu      sync.Mutex // 用于保护对 clients 的并发访问
 )
 
 // 定义 WebSocket 升级器，并自定义 CheckOrigin
@@ -37,8 +42,9 @@ func GenerateRoomID(uuid1, uuid2 string) string {
 // HandleWebSocket 处理 WebSocket 连接
 func HandleWebSocket(w http.ResponseWriter, r *http.Request, db *gorm.DB) {
 	// 获取请求中的查询参数
-	_ = r.URL.Query().Get("user_id") // 获取 user_id
-	//useruuid := r.URL.Query().Get("userIDUUID")     // 获取用户 UUID
+	var wsinfo websocketInfo
+	_ = r.URL.Query().Get("user_id")            // 获取 user_id
+	useruuid := r.URL.Query().Get("userIDUUID") // 获取用户 UUID
 	//frienduuid := r.URL.Query().Get("friendIDUUID") // 获取好友 UUID
 	IsGroup := r.URL.Query().Get("IsGroup") // 获取是否为群聊的标识
 	roomid := r.URL.Query().Get("roomid")   // 获取房间 ID
@@ -57,10 +63,12 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request, db *gorm.DB) {
 		return
 	}
 	defer conn.Close() // 函数退出时关闭连接
-
-	mu.Lock()            // 锁定以保护 clients
-	clients[conn] = true // 将新连接加入到客户端列表
-	mu.Unlock()          // 解锁
+	wsinfo.UserID = useruuid
+	wsinfo.WS = conn
+	mu.Lock() // 锁定以保护 clients
+	//clients[conn] = true // 将新连接加入到客户端列表
+	clients = append(clients, wsinfo)
+	mu.Unlock() // 解锁
 
 	pubsub := sqlconfig.SubscribeMessage(channel) // 订阅消息频道
 	defer pubsub.Close()                          // 函数退出时关闭订阅
@@ -70,9 +78,10 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request, db *gorm.DB) {
 		for {
 			msg, err := pubsub.ReceiveMessage(context.Background()) // 接收消息
 			if err != nil {
+				fmt.Println(err)
 				return // 出现错误则退出
 			}
-			sendToClients(msg.Payload, channel) // 发送消息给所有连接的客户端
+			sendToClients(msg.Payload, useruuid, channel) // 发送消息给所有连接的客户端
 		}
 	}()
 
@@ -81,11 +90,17 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request, db *gorm.DB) {
 		var message model.Message      // 定义消息结构体
 		err := conn.ReadJSON(&message) // 读取客户端发送的 JSON 消息
 		if err != nil {
-			fmt.Println(err)      // 打印错误信息
-			mu.Lock()             // 锁定以保护 clients
-			delete(clients, conn) // 删除已关闭的连接
-			mu.Unlock()           // 解锁
-			return                // 退出循环
+			fmt.Println(err) // 打印错误信息
+			mu.Lock()        // 锁定以保护 clients
+			// 从切片中删除关闭的客户端
+			for i, client := range clients {
+				if client.WS == conn {
+					clients = append(clients[:i], clients[i+1:]...)
+					break
+				}
+			}
+			mu.Unlock() // 解锁
+			return      // 退出循环
 		}
 		// 将消息保存到数据库
 		result := db.Create(&message)
@@ -94,21 +109,31 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request, db *gorm.DB) {
 			continue         // 跳过当前循环
 		}
 		// 发布消息到 Redis
-		sqlconfig.PublishMessage(channel, message.Content)
+		sqlconfig.PublishMessage(channel, message)
 	}
 }
 
 // sendToClients 将消息发送给所有连接的客户端
-func sendToClients(message string, channel string) {
-	mu.Lock()                                   // 锁定以保护 clients
-	defer mu.Unlock()                           // 函数退出时解锁
-	fmt.Println("Sending to channel:", channel) // 打印当前频道
-	fmt.Println(clients)                        // 打印当前客户端列表
-	for client := range clients {               // 遍历所有连接的客户端
-		fmt.Println("1") // 打印调试信息
-		if err := client.WriteMessage(websocket.TextMessage, []byte(message)); err != nil {
-			client.Close()          // 关闭连接
-			delete(clients, client) // 从客户端列表中删除
+func sendToClients(message string, senderID string, channel string) {
+	mu.Lock()         // 锁定以保护 clients
+	defer mu.Unlock() // 函数退出时解锁
+
+	for _, client := range clients {
+		if client.UserID == senderID {
+			continue // 跳过发送者
+		}
+		if err := client.WS.WriteMessage(websocket.TextMessage, []byte(message)); err != nil {
+			err := client.WS.Close()
+			if err != nil {
+				return
+			}
+			// 从切片中删除失效的客户端
+			for i, c := range clients {
+				if c.WS == client.WS {
+					clients = append(clients[:i], clients[i+1:]...)
+					break
+				}
+			}
 		}
 	}
 }
