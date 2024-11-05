@@ -2,14 +2,14 @@
 import Index from "../components/Index.vue";
 import V3Emoji from 'vue3-emoji'
 import 'vue3-emoji/dist/style.css'
-import {onMounted, ref} from "vue";
+import {nextTick, onMounted, ref} from "vue";
 import {
   ConsentFriend,
   GetApplicationRecord,
   GetConsentList,
   GetIsSpeakUserInfo,
-  Receive,
-    MessageList
+  MessageList,
+  Receive
 } from "../../wailsjs/go/api/MyApp.js"
 // import { useMessageStore } from '../store/messages.js'; // 根据你的文件结构调整路径
 
@@ -29,6 +29,10 @@ const show = ref(false)
 const content = ref("")
 let socket
 const messageList = ref([])
+const avatar = ref('')
+const userID = ref('')
+const left = ref('left')
+const right = ref('right')
 const clickEmoji = (val) => {
   content.value = content.value + val
 }
@@ -99,13 +103,13 @@ const dialogue = (item) => {
   socket = new WebSocket(wsUrl);
 
   socket.onopen = async function () {
-    console.log("连接已建立");
-    const res = await MessageList(parseInt(userId),oneinfo.value.friend_id,roomid)
-    console.log(res)
+    messageList.value = await MessageList(roomid)
+    scrollToBottom()
   };
 
   socket.onmessage = function (event) {
-    console.log(JSON.parse(event.data));
+    messageList.value.push(JSON.parse(event.data))
+    scrollToBottom()
   };
 
   socket.onclose = function () {
@@ -117,10 +121,26 @@ const dialogue = (item) => {
     console.error("WebSocket 错误:", error);
   };
 };
+const choiceFile = ()=>{
+  /*
+  * 选择文件上传*
+  * */
 
+}
+
+const scrollToBottom = () => {
+  nextTick(() => {
+    const chatHistoryElement = document.querySelector('.list');
+    if (chatHistoryElement) {
+      chatHistoryElement.scrollTop = chatHistoryElement.scrollHeight;
+    }
+  });
+};
 onMounted(() => {
   consentFriend()
   getisspeakuserinfo()
+  avatar.value = localStorage.getItem("avatar")
+  userID.value = parseInt(localStorage.getItem("userID"))
 })
 </script>
 
@@ -185,22 +205,34 @@ onMounted(() => {
         </template>
       </el-dialog>
     </template>
-    <template #three v-if="show">
+    <template #three v-if="messageList">
       <div class="dialogueList">
         <h2>{{ oneinfo.friend_username }}</h2>
         <ul class="list">
-          <li class="left">
-            <img :src="oneinfo.friend_avatar" alt="">
-            <div>456</div>
-          </li>
-          <li class="right">
-            <div>45asdadadasdadasdasdasdas6</div>
-            <img :src="oneinfo.friend_avatar" alt="">
+          <li :class="[userID===item.send_user_id?'right':'left']" v-for="(item,index) in messageList" :key="item.ID">
+            <div v-if="userID===item.send_user_id" class="d">
+              <div style="background-color: #95ec69" class="c">{{item.content}}
+                <svg class="icon sj" aria-hidden="true" font-size="0.8vw" color="#95ec69" style="transform: rotate(90deg);margin-top: 1vh;position: absolute;margin-left: 0.3vw">
+                  <use xlink:href="#icon-sanjiaoxing1"></use>
+                </svg>
+              </div>
+
+              <img :src="userID===item.send_user_id?avatar:oneinfo.friend_avatar" alt="" style="margin-left: 1vw;margin-right: 1vw">
+
+            </div>
+            <div v-else class="d">
+              <img :src="userID===item.send_user_id?avatar:oneinfo.friend_avatar" alt="" style="margin-left: 0.5vw;margin-right: 1vw">
+              <div style="background-color: #ffffff" class="c">{{item.content}}
+                <div class="x">
+
+                </div>
+              </div>
+            </div>
           </li>
         </ul>
         <div class="di">
           <V3Emoji :recent="true" class="xl" @click-emoji="clickEmoji"/>
-          <svg class="icon wj" aria-hidden="true" font-size="0.8vw">
+          <svg class="icon wj" aria-hidden="true" font-size="0.8vw" @click="choiceFile">
             <use xlink:href="#icon-wenjian"></use>
           </svg>
           <textarea id="story" name="story" rows="5" cols="33" v-model="content"></textarea>
@@ -271,13 +303,11 @@ onMounted(() => {
 
 .dialogueList {
   height: 100vh;
-
   h2 {
     text-align: left;
     text-indent: 1vw;
     height: 8vh;
     line-height: 8vh;
-  //background-color: #f7ba2a; margin: 0;
     color: black;
     border-bottom: 1px solid black;
   }
@@ -286,43 +316,40 @@ onMounted(() => {
     height: 60vh;
     padding: 0;
     margin: 0;
-
+    overflow-y: auto;
     .left {
       list-style: none;
       text-align: left;
-      padding-left: 2vw;
+      height: 5vh;
       display: flex;
       align-items: center;
-      margin-top: 2vh;
-
-      img {
-        width: 3vw;
-        height: 4vh;
-      }
-
-      div {
-        margin-left: 0.5vw;
-        color: black;
-      }
     }
 
     .right {
       list-style: none;
       text-align: right;
-      padding-right: 2vw;
       height: 5vh;
       display: flex;
       justify-content: flex-end;
       align-items: center;
 
-      img {
-        width: 3vw;
+    }
+    img {
+      width: 2vw;
+      height: 4vh;
+    }
+    .d {
+      margin-left: 0.5vw;
+      color: black;
+      display: flex;
+      position: relative;
+      .c{
+        padding-left: 1vh;
+        padding-right: 1vh;
         height: 4vh;
-      }
-
-      div {
-        margin-right: 0.5vw;
-        color: black;
+        line-height: 4vh;
+        border-radius: 0.3vw;
+        position: relative;
       }
     }
   }

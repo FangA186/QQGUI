@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 	"net/http"
@@ -41,6 +42,7 @@ type ApplyForResponse struct {
 type MyApp struct {
 	Ctx                    context.Context
 	Db                     *gorm.DB
+	Rs                     *redis.Client
 	UserService            *UserService // 添加 UserService 字段
 	FriendService          *FriendService
 	ConsentService         *ConsentFriendService
@@ -141,20 +143,6 @@ func (a *MyApp) RegisterFunc(username, pwd string) map[string]interface{} {
 		"success": "用户创建成功",
 	}
 }
-
-// SendMessage 处理发送消息请求
-//func (a *MyApp) SendMessage(messageContent string) (string, error) {
-//	// 保存消息到数据库
-//	message := model.Message{}
-//	if err := db.Create(&message).Error; err != nil {
-//		return "", fmt.Errorf("保存消息失败: %v", err)
-//	}
-//
-//	// 发布消息到 Redis
-//	sqlconfig.PublishMessage("chat", message.Content)
-//
-//	return "消息已发送", nil
-//}
 
 // StartHTTPServer // UploadFile 上传文件
 //
@@ -420,10 +408,11 @@ func (a *MyApp) GetIsSpeakUserInfo(userID string) []ApplyForResponse {
 	return res
 }
 
-func (a *MyApp) MessageList(userID, friendID uint, roomID string) []model.Message {
+// MessageList 获取当前用户与某个用户的聊天记录
+func (a *MyApp) MessageList(roomID string) []model.Message {
+
 	getMessage := &MessageService{Db: a.Db}
-	list := getMessage.GetMessages(userID, friendID, roomID)
-	fmt.Println(userID, friendID)
-	fmt.Println(list)
+	fmt.Println(roomID)
+	list := getMessage.GetMessages(roomID)
 	return list
 }

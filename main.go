@@ -18,7 +18,7 @@ var assets embed.FS
 func main() {
 	ctx := context.Background()
 	//初始化 Redis 客户端
-	sqlconfig.InitRedis()
+	rs := sqlconfig.InitRedis()
 	db := sqlconfig.MysqlConnect()
 	userService := api.NewUserService(db)     // 创建用户服务
 	friendService := api.NewFriendService(db) // 创建好友列表服务
@@ -29,12 +29,13 @@ func main() {
 	searchService := api.SearchService(db)
 	speakService := api.SpeakService(db)
 	getIsSpeakUserInfoService := api.GetIsSpeakUserService(db)
-	getMessageListService := api.GetMessageListService(db)
+	getMessageListService := api.GetMessageListService(db, rs)
 	// 启动 HTTP 服务器
 
 	app := &api.MyApp{
 		Ctx:                    ctx,
-		Db:                     db,          // 将数据库连接赋值给 MyApp
+		Db:                     db, // 将数据库连接赋值给 MyApp
+		Rs:                     rs,
 		UserService:            userService, // 将用户服务赋值给 MyApp
 		FriendService:          friendService,
 		ConsentService:         consentFriendService,

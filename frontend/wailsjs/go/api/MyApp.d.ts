@@ -19,7 +19,7 @@ export function IsSpeak(arg1:string,arg2:string):Promise<{[key: string]: any}>;
 
 export function Login(arg1:string,arg2:string):Promise<api.LoginResponse>;
 
-export function MessageList(arg1:number,arg2:number,arg3:string):Promise<Array<model.Message>>;
+export function MessageList(arg1:string):Promise<Array<model.Message>>;
 
 export function Receive(arg1:string,arg2:string,arg3:string,arg4:string):Promise<void>;
 

@@ -12,12 +12,13 @@ import (
 var rdb *redis.Client
 
 // InitRedis 初始化 Redis 客户端
-func InitRedis() {
+func InitRedis() *redis.Client {
 	rdb = redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379", // Redis 地址
 		Password: "",               // 没有密码
 		DB:       0,                // 默认数据库
 	})
+	return rdb
 }
 
 // PublishMessage 发布消息到 Redis

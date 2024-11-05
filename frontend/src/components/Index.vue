@@ -13,7 +13,6 @@ const avatar = ref('')
 
 onMounted(()=>{
   avatar.value = localStorage.getItem("avatar")
-
 })
 </script>
 
