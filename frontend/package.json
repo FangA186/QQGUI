@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@wangeditor/editor": "^5.1.23",
     "axios": "^1.7.7",
     "element-plus": "^2.8.6",
     "jsencrypt": "^3.3.2",

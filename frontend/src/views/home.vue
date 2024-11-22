@@ -2,6 +2,7 @@
 import Index from "../components/Index.vue";
 import V3Emoji from 'vue3-emoji'
 import 'vue3-emoji/dist/style.css'
+
 import {nextTick, onMounted, ref} from "vue";
 import {
   ConsentFriend,
@@ -75,6 +76,7 @@ const sendMessage = async () => {
       oneinfo.value.friend_username,
   )
   socket.send(JSON.stringify({
+    two:2,
     content:content.value,
     send_user_id:parseInt(localStorage.getItem("userID")),
     receiver_user_id:oneinfo.value.friend_id,
@@ -86,7 +88,7 @@ const sendMessage = async () => {
 const dialogue = (item) => {
   oneinfo.value = item;
   show.value = true;
-  const userId = localStorage.getItem("userID"); // 用户 ID
+  // const userId = localStorage.getItem("userID"); // 用户 ID
   const userIDUUID = localStorage.getItem("uuid");
   const friendIDUUID = item.friend_uuid;
   const isGroup = 0; // 是否为群聊
@@ -99,7 +101,7 @@ const dialogue = (item) => {
   }
 
   // 建立新的 WebSocket 连接
-  const wsUrl = `ws://127.0.0.1:8080/ws?user_id=${userId}&userIDUUID=${userIDUUID}&friendIDUUID=${friendIDUUID}&IsGroup=${isGroup}&roomid=${roomid}`;
+  const wsUrl = `ws://127.0.0.1:8080/ws?&userIDUUID=${userIDUUID}&IsGroup=${isGroup}&roomid=${roomid}`;
   socket = new WebSocket(wsUrl);
 
   socket.onopen = async function () {
@@ -109,6 +111,7 @@ const dialogue = (item) => {
 
   socket.onmessage = function (event) {
     messageList.value.push(JSON.parse(event.data))
+    console.log(JSON.parse(event.data))
     scrollToBottom()
   };
 
@@ -125,9 +128,20 @@ const choiceFile = ()=>{
   /*
   * 选择文件上传*
   * */
-
+  const fileInput = document.querySelector("#fileInput")
+  if (fileInput) {
+    fileInput.click(); // 手动触发文件选择器
+  }
+  console.log(fileInput)
+  console.log(456)
 }
-
+const handleFileChange = function (event) {
+  const file = event.target.files[0]; // 获取选中的文件
+  if (file) {
+    console.log("选择的文件:", file);
+    // 在这里处理文件，例如上传或显示预览
+  }
+}
 const scrollToBottom = () => {
   nextTick(() => {
     const chatHistoryElement = document.querySelector('.list');
@@ -232,7 +246,13 @@ onMounted(() => {
         </ul>
         <div class="di">
           <V3Emoji :recent="true" class="xl" @click-emoji="clickEmoji"/>
-          <svg class="icon wj" aria-hidden="true" font-size="0.8vw" @click="choiceFile">
+          <input
+              type="file"
+              id="fileInput"
+              style="display: none;"
+              @change="handleFileChange"
+          />
+          <svg class="icon wj" aria-hidden="true"  style="cursor: pointer" font-size="0.8vw" @click="choiceFile">
             <use xlink:href="#icon-wenjian"></use>
           </svg>
           <textarea id="story" name="story" rows="5" cols="33" v-model="content"></textarea>
