@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/websocket"
 	"gorm.io/gorm"
 	"net/http"
+	"strings"
 	"sync"
 )
 
@@ -30,30 +31,21 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-// GenerateRoomID 生成房间 ID，通过字典顺序比较两个 UUID
-func GenerateRoomID(uuid1, uuid2 string) string {
-	// 对两个 UUID 进行字典顺序比较
-	if uuid1 < uuid2 {
-		return uuid1 + "_" + uuid2 // 返回 UUID1 + UUID2 形式的房间 ID
-	}
-	return uuid2 + "_" + uuid1 // 返回 UUID2 + UUID1 形式的房间 ID
-}
-
 // HandleWebSocket 处理 WebSocket 连接
 func HandleWebSocket(w http.ResponseWriter, r *http.Request, db *gorm.DB) {
 	// 获取请求中的查询参数
 	var wsinfo websocketInfo
-	_ = r.URL.Query().Get("user_id")            // 获取 user_id
+	//_ = r.URL.Query().Get("user_id")            // 获取 user_id
 	useruuid := r.URL.Query().Get("userIDUUID") // 获取用户 UUID
-	//frienduuid := r.URL.Query().Get("friendIDUUID") // 获取好友 UUID
-	IsGroup := r.URL.Query().Get("IsGroup") // 获取是否为群聊的标识
-	roomid := r.URL.Query().Get("roomid")   // 获取房间 ID
-	var channel string                      // 定义频道变量
+	IsGroup := r.URL.Query().Get("IsGroup")     // 获取是否为群聊的标识
+	roomid := r.URL.Query().Get("roomid")       // 获取房间 ID
+	var channel string                          // 定义频道变量
 	// 根据 IsGroup 参数决定频道类型
 	if IsGroup == "1" {
 		channel = "group" + "1" // 设置为群聊频道
 	} else if IsGroup == "0" {
-		channel = "user:" + roomid // 设置为用户频道
+		channel = "user:" + roomid + ":" + useruuid // 设置为用户频道
+		wsinfo.UserID = useruuid
 	}
 	// 升级 HTTP 连接为 WebSocket 连接
 	conn, err := upgrader.Upgrade(w, r, nil)
@@ -63,7 +55,7 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request, db *gorm.DB) {
 		return
 	}
 	defer conn.Close() // 函数退出时关闭连接
-	wsinfo.UserID = useruuid
+
 	wsinfo.WS = conn
 	mu.Lock() // 锁定以保护 clients
 	//clients[conn] = true // 将新连接加入到客户端列表
@@ -81,7 +73,7 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request, db *gorm.DB) {
 				fmt.Println(err)
 				return // 出现错误则退出
 			}
-			sendToClients(msg.Payload, useruuid, channel) // 发送消息给所有连接的客户端
+			sendToClients(msg.Payload, roomid) // 发送消息到该房间内的用户
 		}
 	}()
 
@@ -114,26 +106,33 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request, db *gorm.DB) {
 }
 
 // sendToClients 将消息发送给所有连接的客户端
-func sendToClients(message string, senderID string, channel string) {
-	mu.Lock()         // 锁定以保护 clients
-	defer mu.Unlock() // 函数退出时解锁
+func sendToClients(message string, roomID string) {
+	mu.Lock() // 锁定以保护 clients
+	defer mu.Unlock()
 
+	// 解析房间内的用户
+	userIDs := ParseRoomID(roomID)
+
+	// 遍历 clients，仅向属于该房间的用户发送消息
 	for _, client := range clients {
-		if client.UserID == senderID {
-			continue // 跳过发送者
-		}
-		if err := client.WS.WriteMessage(websocket.TextMessage, []byte(message)); err != nil {
-			err := client.WS.Close()
-			if err != nil {
-				return
-			}
-			// 从切片中删除失效的客户端
-			for i, c := range clients {
-				if c.WS == client.WS {
-					clients = append(clients[:i], clients[i+1:]...)
-					break
+		for _, userID := range userIDs {
+			if client.UserID == userID { // 判断是否是房间内的用户
+				if err := client.WS.WriteMessage(websocket.TextMessage, []byte(message)); err != nil {
+					fmt.Printf("发送失败，关闭连接 (用户: %s): %v\n", client.UserID, err)
+					_ = client.WS.Close()
+					// 从切片中删除失效的客户端
+					for i, c := range clients {
+						if c.WS == client.WS {
+							clients = append(clients[:i], clients[i+1:]...)
+							break
+						}
+					}
 				}
 			}
 		}
 	}
+}
+
+func ParseRoomID(roomid string) []string {
+	return strings.Split(roomid, "_") // 根据 "_" 分割返回用户 ID 列表
 }

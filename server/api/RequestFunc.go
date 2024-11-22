@@ -412,7 +412,6 @@ func (a *MyApp) GetIsSpeakUserInfo(userID string) []ApplyForResponse {
 func (a *MyApp) MessageList(roomID string) []model.Message {
 
 	getMessage := &MessageService{Db: a.Db}
-	fmt.Println(roomID)
 	list := getMessage.GetMessages(roomID)
 	return list
 }

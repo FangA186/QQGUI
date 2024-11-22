@@ -26,6 +26,5 @@ func (a *MessageService) GetMessages(roomID string) []model.Message {
 	var messages []model.Message
 	res := a.Db.Where("room_id = ?", roomID).Find(&messages)
 	fmt.Println(res.Error)
-	fmt.Println(messages)
 	return messages
 }
