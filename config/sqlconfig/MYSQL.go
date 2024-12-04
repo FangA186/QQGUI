@@ -31,7 +31,7 @@ func MysqlConnect() *gorm.DB {
 	sqlDB.SetMaxIdleConns(50)           // 最大空闲连接数
 	sqlDB.SetConnMaxLifetime(time.Hour) // 连接的最大生命周期
 
-	if err := db.AutoMigrate(&model.Message{}); err != nil {
+	if err := db.AutoMigrate(&model.Message{}, &model.GroupMember{}); err != nil {
 		log.Fatalf("AutoMigrate failed: %v", err)
 	}
 

@@ -8,16 +8,10 @@ const clearIcon = ref(false)
 const emit = defineEmits(['clear']);
 const oneinfo = ref() // 存储点击的用户
 const dialogVisible = ref(false)
+const showGroup = ref(false)
 const search = async () => {
   const userid = localStorage.getItem("userID")
   const res = await SearchUser(userid,username.value)
-  // const info = await axios.get("/api/searchuser", {
-  //   params: {
-  //     userid,
-  //     username: username.value
-  //   }
-  // })
-  console.log(res)
   searchInfo.value = res
   res.length > 0 ? showul.value = true : showul.value = false
 }
@@ -41,24 +35,32 @@ const lookInfo = (item) => {
 const addFriend = async ()=>{
   const agr1 = localStorage.getItem("userID")
   const agr2 = JSON.stringify(oneinfo.value.ID) // 被申请ID
-  const res = await HandleAddFriendRequest(agr1,agr2,false)
-  // const res = await axios.post("/api/addfriend",{
-  //   user_id:localStorage.getItem("userID"),
-  //   friend_id:JSON.stringify(oneinfo.value.ID),
-  //   is_group:false
-  // })
-  console.log(res)
+  await HandleAddFriendRequest(agr1,agr2,false)
+}
+const qiehuan = ()=>{
+
+  showGroup.value = !showGroup.value
+  emit('clear',{message1:showGroup.value})
+  // if (showGroup.value){
+  //   emit('clear',{message:false})
+  // }else {
+  //   emit('clear',{message:true})
+  // }
 }
 </script>
 <template>
   <div class="search">
     <input type="text" maxlength="50" placeholder="搜索" style="box-shadow: 0 0 0.1vh white" @keyup.enter="search" v-model="username" @click="clear1"/>
     <svg class="icon iconsearch" aria-hidden="true" font-size="15">
-      <use xlink:href="#icon-sousuo"></use>
+      <use xlink:href="#icon-sanjiaoxing"></use>
     </svg>
+
     <div class="action-icon-container">
       <slot name="action-icon"></slot>
     </div>
+    <svg class="icon iconqiehuan" aria-hidden="true" font-size="18" @click="qiehuan">
+      <use xlink:href="#icon-sanjiaoxing-copy"></use>
+    </svg>
     <ul v-if="showul" class="searchList">
       <li v-for="(item, index) in searchInfo" :key="index" @click="lookInfo(item)">
         <img :src="item.Avatar" alt=""/>
@@ -105,6 +107,11 @@ const addFriend = async ()=>{
     left: 1.3vw;
     top: 1.6vh;
   }
+  .iconqiehuan{
+    position: absolute;
+    right: 0.5vw;
+    top: 1.6vh;
+  }
 
   input {
     position: absolute;
@@ -122,7 +129,7 @@ const addFriend = async ()=>{
 
   .action-icon-container {
     position: absolute;
-    right: 2vw;
+    right:2vw;
     top: 1.1vh;
     cursor: pointer;
   }

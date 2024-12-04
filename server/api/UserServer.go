@@ -26,3 +26,8 @@ func (s *UserService) CreateUser(info *model.UserInfo) error {
 	}
 	return err
 }
+func (s *UserService) GetUserByUserID(ID string) (string, error) {
+	var user model.UserInfo
+	err := s.Db.Where("id = ?", ID).First(&user).Error
+	return user.Username, err
+}

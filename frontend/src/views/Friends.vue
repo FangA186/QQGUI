@@ -1,12 +1,13 @@
 <script setup>
 import Index from "../components/Index.vue";
-import {onMounted, ref} from "vue";
+import {onMounted, ref, watch} from "vue";
 import {useRouter} from "vue-router";
 import {FriendList, IsSpeak, Login} from "../../wailsjs/go/api/MyApp.js"
 const friendsList = ref([])
 const dialogVisible = ref(false)
 const oneinfo = ref()
 const router = useRouter()
+const emit = defineEmits(['data']);
 const friends = async () => {
   const res = await FriendList(localStorage.getItem("userID"))
   friendsList.value = res.InfoList

@@ -10,7 +10,8 @@ import {
   GetConsentList,
   GetIsSpeakUserInfo,
   MessageList,
-  Receive
+  Receive,
+    QueryRoom
 } from "../../wailsjs/go/api/MyApp.js"
 // import { useMessageStore } from '../store/messages.js'; // 根据你的文件结构调整路径
 
@@ -34,6 +35,7 @@ const avatar = ref('')
 const userID = ref('')
 const left = ref('left')
 const right = ref('right')
+const groupList = ref([])
 const clickEmoji = (val) => {
   content.value = content.value + val
 }
@@ -62,6 +64,7 @@ const refuse = async (item) => {
 }
 const getisspeakuserinfo = async () => {
   speakList.value = await GetIsSpeakUserInfo(localStorage.getItem("userID"))
+  console.log(speakList.value)
 }
 const GenerateRoomID = (uuid1,uuid2)=>{
   if (uuid1<uuid2){
@@ -150,11 +153,27 @@ const scrollToBottom = () => {
     }
   });
 };
+const queryRoom = async ()=>{
+  const res = await QueryRoom(parseInt(localStorage.getItem("userID")))
+  console.log(res["room"])
+  groupList.value = res["room"]
+  console.log(groupList.value)
+}
+// 根据图片数量动态生成栅格布局的样式
+const getGridStyle = (imageCount) => {
+  let columns = 1 // 默认一列
+  if (imageCount % 2 === 0) {
+    columns = 2 // 偶数图片，使用两列
+  } else if (imageCount % 3 === 0) {
+    columns = 3 // 奇数图片，最多三列
+  }
+}
 onMounted(() => {
   consentFriend()
   getisspeakuserinfo()
   avatar.value = localStorage.getItem("avatar")
   userID.value = parseInt(localStorage.getItem("userID"))
+  queryRoom(userID.value)
 })
 </script>
 
@@ -218,6 +237,21 @@ onMounted(() => {
           </div>
         </template>
       </el-dialog>
+    </template>
+    <template #group>
+      <ul class="group">
+        <li style="cursor: pointer; margin: 10px 0;" v-for="(item, index) in groupList" :key="index">
+          <div class="image-container">
+            <div class="im">
+              <div v-for="(img, imgIndex) in item.userInfo" :key="imgIndex" class="image-item">
+                <img :src="img.avatar" alt="image" />
+              </div>
+            </div>
+
+            <div class="s">{{ item.roomName }}</div>
+          </div>
+        </li>
+      </ul>
     </template>
     <template #three v-if="messageList">
       <div class="dialogueList">
@@ -284,7 +318,6 @@ onMounted(() => {
       position: absolute;
       right: 0
     }
-
     img {
       width: 13%;
       border-radius: 0.5vh;
@@ -310,7 +343,56 @@ onMounted(() => {
 
 
 }
+.group {
+  padding: 0;
+  list-style: none;
+  width: 100%;
 
+  li {
+    padding: 0;
+    //padding: 1vh;
+    //background-color: aquamarine;
+    .image-container {
+      width: 100%;
+      background-color: #67c23a;
+      display: flex;
+      //flex-wrap: wrap; /* 允许换行 */
+      gap: 10px; /* 设置图片之间的间距 */
+      //align-items: center; /* 居中对齐图片 */
+      //justify-content: center; /* 图片水平居中 */
+      //background-color: #67c23a;
+      .im{
+        width: 100px;
+        display: flex;
+      flex-wrap: wrap; /* 允许换行 */
+        background-color: yellow;
+        padding: 0;
+        .image-item {
+          flex: 0 1 30%; /* 每个图片占 30% 宽度，最多三列 */
+          max-width: 100px; /* 最大宽度可以限制 */
+          margin-bottom: 10px;
+          background-color: red;
+          img {
+            width: 100%;
+            height: auto;
+            object-fit: cover; /* 保持长宽比，并填充区域 */
+          }
+        }
+
+      }
+      .s {
+        width: 70%;
+        color: white;
+        text-align: center;
+        margin-top: 10px;
+      }
+    }
+
+
+
+
+  }
+}
 .searchList {
   height: 95vh;
   background-color: #d9d8d8;

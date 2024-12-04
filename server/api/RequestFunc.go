@@ -53,6 +53,7 @@ type MyApp struct {
 	SpeakService           *IsSpeakService
 	IsSpeakUserInfoService *GetIsSpeakUserInfoService
 	GetMessageListService  *MessageService
+	CreateRoomService      *RoomService
 }
 
 func NewMyApp(db *gorm.DB) *MyApp {
@@ -410,8 +411,61 @@ func (a *MyApp) GetIsSpeakUserInfo(userID string) []ApplyForResponse {
 
 // MessageList 获取当前用户与某个用户的聊天记录
 func (a *MyApp) MessageList(roomID string) []model.Message {
-
 	getMessage := &MessageService{Db: a.Db}
 	list := getMessage.GetMessages(roomID)
 	return list
+}
+
+// 生成群聊房间号
+func createRoomID() string {
+	v4, _ := uuid.NewRandom()
+	return v4.String()
+}
+func (a *MyApp) CreateRoom(groupInfo map[string]map[string]string) (map[string]map[string]string, error, error) {
+	// 打印收到的数据
+	userS := &UserService{Db: a.Db}
+	//var err error
+	roomService := &RoomService{Db: a.Db}
+	roomID := createRoomID()
+	for key, user := range groupInfo {
+		fmt.Printf("Key: %s, UserID: %s, UserName: %s\n", key, user["userID"], user["userName"])
+		if key == "suser" {
+			fmt.Println(user["UserID"])
+			suserName, _ := userS.GetUserByUserID(user["userID"])
+			err, err1 := roomService.CreateRoom(groupInfo, user["userID"], roomID, suserName)
+			if err != nil || err1 != nil {
+				return nil, err, err1
+			}
+		} else {
+			roomService.CreateRoomMember(roomID, user["userID"])
+		}
+	}
+
+	return groupInfo, nil, nil
+}
+
+type UserInfo struct {
+	UserName string `json:"userName"`
+	UserID   int    `json:"userID"`
+	Avatar   string `json:"avatar"`
+}
+
+type Room struct {
+	RoomID     string     `json:"roomID"`
+	RoomName   string     `json:"roomName"` // 修改字段名为 roomName
+	UserInfo   []UserInfo `json:"userInfo"` // 修改为切片
+	CreateUser int        `json:"createUser"`
+}
+
+type Response struct {
+	Room []Room `json:"room"`
+}
+
+func (a *MyApp) QueryRoom(userID int) *Response {
+	roomService := &RoomService{
+		Db: a.Db,
+	}
+	fmt.Println(userID)
+	roomInfo, _ := roomService.QueryRoomService(userID)
+	return roomInfo
 }

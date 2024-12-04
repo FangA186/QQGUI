@@ -30,6 +30,7 @@ func main() {
 	speakService := api.SpeakService(db)
 	getIsSpeakUserInfoService := api.GetIsSpeakUserService(db)
 	getMessageListService := api.GetMessageListService(db, rs)
+	createRoomService := api.CreateRoomFactory(db)
 	// 启动 HTTP 服务器
 
 	app := &api.MyApp{
@@ -46,6 +47,7 @@ func main() {
 		SpeakService:           speakService,
 		IsSpeakUserInfoService: getIsSpeakUserInfoService,
 		GetMessageListService:  getMessageListService,
+		CreateRoomService:      createRoomService,
 	}
 
 	go app.StartHTTPServer()
