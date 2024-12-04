@@ -10,8 +10,8 @@ import {
   GetConsentList,
   GetIsSpeakUserInfo,
   MessageList,
-  Receive,
-    QueryRoom
+  QueryRoom,
+  Receive
 } from "../../wailsjs/go/api/MyApp.js"
 // import { useMessageStore } from '../store/messages.js'; // 根据你的文件结构调整路径
 
@@ -66,8 +66,8 @@ const getisspeakuserinfo = async () => {
   speakList.value = await GetIsSpeakUserInfo(localStorage.getItem("userID"))
   console.log(speakList.value)
 }
-const GenerateRoomID = (uuid1,uuid2)=>{
-  if (uuid1<uuid2){
+const GenerateRoomID = (uuid1, uuid2) => {
+  if (uuid1 < uuid2) {
     return uuid1 + "_" + uuid2
   }
   return uuid2 + "_" + uuid1
@@ -79,12 +79,12 @@ const sendMessage = async () => {
       oneinfo.value.friend_username,
   )
   socket.send(JSON.stringify({
-    two:2,
-    content:content.value,
-    send_user_id:parseInt(localStorage.getItem("userID")),
-    receiver_user_id:oneinfo.value.friend_id,
+    two: 2,
+    content: content.value,
+    send_user_id: parseInt(localStorage.getItem("userID")),
+    receiver_user_id: oneinfo.value.friend_id,
     file_url: "",
-    room_id:GenerateRoomID(localStorage.getItem("uuid"),oneinfo.value.friend_uuid)
+    room_id: GenerateRoomID(localStorage.getItem("uuid"), oneinfo.value.friend_uuid)
   }))
   content.value = ""
 }
@@ -127,7 +127,7 @@ const dialogue = (item) => {
     console.error("WebSocket 错误:", error);
   };
 };
-const choiceFile = ()=>{
+const choiceFile = () => {
   /*
   * 选择文件上传*
   * */
@@ -153,21 +153,13 @@ const scrollToBottom = () => {
     }
   });
 };
-const queryRoom = async ()=>{
+const queryRoom = async () => {
   const res = await QueryRoom(parseInt(localStorage.getItem("userID")))
   console.log(res["room"])
   groupList.value = res["room"]
   console.log(groupList.value)
 }
-// 根据图片数量动态生成栅格布局的样式
-const getGridStyle = (imageCount) => {
-  let columns = 1 // 默认一列
-  if (imageCount % 2 === 0) {
-    columns = 2 // 偶数图片，使用两列
-  } else if (imageCount % 3 === 0) {
-    columns = 3 // 奇数图片，最多三列
-  }
-}
+
 onMounted(() => {
   consentFriend()
   getisspeakuserinfo()
@@ -175,6 +167,64 @@ onMounted(() => {
   userID.value = parseInt(localStorage.getItem("userID"))
   queryRoom(userID.value)
 })
+
+const imgG = (info) => {
+  // 图片排列
+  if (info.length === 2) {
+    return {
+      flex: "0 1"
+    }
+  } else if (info.length === 3) {
+    return {
+      flex:"0 1"
+    }
+
+  } else if (info.length === 4) {
+    return {
+      flex: "0 1"
+    }
+  } else if (info.length === 5) {
+    return {
+      flex: "0 1"
+    }
+  } else if (info.length === 6) {
+    return {
+      flex: "0 1"
+    }
+  } else if (info.length === 7) {
+    return {
+      flex: "0 1"
+    }
+  } else if (info.length === 8) {
+    return {
+      flex: "0 1"
+    }
+  } else if (info.length === 9) {
+    return {
+      flex: "0 1"
+    }
+  } else {
+    // 0?
+  }
+}
+const img3 = (info)=>{
+  if (info.length===2){
+    return {
+      width:"1.2vw",
+      height:"2.4vh"
+    }
+  }else if (info.length===3){
+    return {
+      width:"1.2vw",
+      height:"2.4vh"
+    }
+  }else {
+    return {
+      width:"0.8vw",
+      height:"1.6vh"
+    }
+  }
+}
 </script>
 
 <template>
@@ -243,11 +293,10 @@ onMounted(() => {
         <li style="cursor: pointer; margin: 10px 0;" v-for="(item, index) in groupList" :key="index">
           <div class="image-container">
             <div class="im">
-              <div v-for="(img, imgIndex) in item.userInfo" :key="imgIndex" class="image-item">
-                <img :src="img.avatar" alt="image" />
+              <div v-for="(img, imgIndex) in item.userInfo.slice(0,9)"  :key="imgIndex"  :style="imgG(item.userInfo)" class="image-item">
+                <img :src="img.avatar" alt="image" :style="img3(item.userInfo)"/>
               </div>
             </div>
-
             <div class="s">{{ item.roomName }}</div>
           </div>
         </li>
@@ -259,18 +308,21 @@ onMounted(() => {
         <ul class="list">
           <li :class="[userID===item.send_user_id?'right':'left']" v-for="(item,index) in messageList" :key="item.ID">
             <div v-if="userID===item.send_user_id" class="d">
-              <div style="background-color: #95ec69" class="c">{{item.content}}
-                <svg class="icon sj" aria-hidden="true" font-size="0.8vw" color="#95ec69" style="transform: rotate(90deg);margin-top: 1vh;position: absolute;margin-left: 0.3vw">
+              <div style="background-color: #95ec69" class="c">{{ item.content }}
+                <svg class="icon sj" aria-hidden="true" font-size="0.8vw" color="#95ec69"
+                     style="transform: rotate(90deg);margin-top: 1vh;position: absolute;margin-left: 0.3vw">
                   <use xlink:href="#icon-sanjiaoxing1"></use>
                 </svg>
               </div>
 
-              <img :src="userID===item.send_user_id?avatar:oneinfo.friend_avatar" alt="" style="margin-left: 1vw;margin-right: 1vw">
+              <img :src="userID===item.send_user_id?avatar:oneinfo.friend_avatar" alt=""
+                   style="margin-left: 1vw;margin-right: 1vw">
 
             </div>
             <div v-else class="d">
-              <img :src="userID===item.send_user_id?avatar:oneinfo.friend_avatar" alt="" style="margin-left: 0.5vw;margin-right: 1vw">
-              <div style="background-color: #ffffff" class="c">{{item.content}}
+              <img :src="userID===item.send_user_id?avatar:oneinfo.friend_avatar" alt=""
+                   style="margin-left: 0.5vw;margin-right: 1vw">
+              <div style="background-color: #ffffff" class="c">{{ item.content }}
                 <div class="x">
 
                 </div>
@@ -286,7 +338,7 @@ onMounted(() => {
               style="display: none;"
               @change="handleFileChange"
           />
-          <svg class="icon wj" aria-hidden="true"  style="cursor: pointer" font-size="0.8vw" @click="choiceFile">
+          <svg class="icon wj" aria-hidden="true" style="cursor: pointer" font-size="0.8vw" @click="choiceFile">
             <use xlink:href="#icon-wenjian"></use>
           </svg>
           <textarea id="story" name="story" rows="5" cols="33" v-model="content"></textarea>
@@ -318,6 +370,7 @@ onMounted(() => {
       position: absolute;
       right: 0
     }
+
     img {
       width: 13%;
       border-radius: 0.5vh;
@@ -326,7 +379,6 @@ onMounted(() => {
       height: 4vh;
       image-rendering: -moz-crisp-edges; /* Firefox */
       image-rendering: -o-crisp-edges; /* Opera */
-      image-rendering: -webkit-optimize-contrast;
       image-rendering: crisp-edges;
       -ms-interpolation-mode: nearest-neighbor; /* IE (non-standard property) */
       transform: translateY(-50%);
@@ -343,56 +395,70 @@ onMounted(() => {
 
 
 }
+
 .group {
   padding: 0;
   list-style: none;
   width: 100%;
-
+  height: 93vh;
+  background-color: #eae7e7;
   li {
     padding: 0;
-    //padding: 1vh;
-    //background-color: aquamarine;
+    border-bottom: 1px solid black;
     .image-container {
       width: 100%;
-      background-color: #67c23a;
       display: flex;
-      //flex-wrap: wrap; /* 允许换行 */
-      gap: 10px; /* 设置图片之间的间距 */
-      //align-items: center; /* 居中对齐图片 */
-      //justify-content: center; /* 图片水平居中 */
-      //background-color: #67c23a;
-      .im{
-        width: 100px;
+      background-color: #eae7e7;
+      .im {
         display: flex;
-      flex-wrap: wrap; /* 允许换行 */
-        background-color: yellow;
-        padding: 0;
+        flex-wrap: wrap; /* 允许换行 */
+        //width: 17%;
+        //background-color: red;
+        //padding-left: 1vh;
+        //height: 5vh;
+        width: 3.25vw;
+        padding: 0.5vh;
         .image-item {
-          flex: 0 1 30%; /* 每个图片占 30% 宽度，最多三列 */
-          max-width: 100px; /* 最大宽度可以限制 */
-          margin-bottom: 10px;
-          background-color: red;
+          //margin-right: 0.1vh;
+          //height: 2.2vh; // 3个人
+          //height: 4vh; // 2个人
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: space-around; // 水平均匀分布
+          align-items: center; // 垂直居中
+          gap: 0.5vw; // 图片之间的间距
+          padding: 0.1vh;
+          //height: 2vh;
           img {
-            width: 100%;
-            height: auto;
-            object-fit: cover; /* 保持长宽比，并填充区域 */
+            //image-rendering: -moz-crisp-edges; /* Firefox */
+            //image-rendering: -o-crisp-edges; /* Opera */
+            //image-rendering: crisp-edges;
+            //-ms-interpolation-mode: nearest-neighbor; /* IE (non-standard property) */
+            //width:0.8vw; // 3个人
+            ////width:4vw; // 2个人
+            //height: 1.6vh;
+            object-fit: fill /* 保持长宽比，并填充区域 */
           }
         }
 
       }
+
       .s {
-        width: 70%;
-        color: white;
-        text-align: center;
-        margin-top: 10px;
+        width: 90%;
+        color: black;
+        text-align: right;
+        padding-right: 3vh;
       }
     }
 
 
-
-
   }
+
+  //li:last-child{
+  //  border-bottom: none;
+  //}
 }
+
 .searchList {
   height: 95vh;
   background-color: #d9d8d8;
@@ -405,10 +471,11 @@ onMounted(() => {
 
 .dialogueList {
   height: 100vh;
+
   h2 {
     text-align: left;
     text-indent: 1vw;
-    height: 8vh;
+    height: 4.6vh;
     line-height: 8vh;
     color: black;
     border-bottom: 1px solid black;
@@ -419,6 +486,7 @@ onMounted(() => {
     padding: 0;
     margin: 0;
     overflow-y: auto;
+
     .left {
       list-style: none;
       text-align: left;
@@ -436,16 +504,19 @@ onMounted(() => {
       align-items: center;
 
     }
+
     img {
       width: 2vw;
       height: 4vh;
     }
+
     .d {
       margin-left: 0.5vw;
       color: black;
       display: flex;
       position: relative;
-      .c{
+
+      .c {
         padding-left: 1vh;
         padding-right: 1vh;
         height: 4vh;

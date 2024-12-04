@@ -51,12 +51,12 @@ const toggleCheckbox = (item) => {
 // 处理接收到的事件
 function handleClear(data) {
   console.log(data)
-  console.log(data.message===undefined)
   // showmessages.value = data.message
   if (data.message===undefined){
-    showmessages.value = false
+    showmessages.value = !data.message1
     showGroup.value = data.message1
   }else {
+    console.log()
     showmessages.value = data.message
   }
 }
@@ -174,7 +174,8 @@ const qiehuan = ()=>{
         margin-top: 1vh;
         image-rendering: -moz-crisp-edges; /* Firefox */
         image-rendering: -o-crisp-edges; /* Opera */
-        image-rendering: -webkit-optimize-contrast;image-rendering: crisp-edges;
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
         -ms-interpolation-mode: nearest-neighbor; /* IE (non-standard property) */
       }
     }
