@@ -5,6 +5,8 @@ import {model} from '../models';
 
 export function ConsentFriend(arg1:string,arg2:string,arg3:string):Promise<string>;
 
+export function CreateRoom(arg1:{[key: string]: {[key: string]: string}}):Promise<{[key: string]: {[key: string]: string}}>;
+
 export function FriendList(arg1:string):Promise<api.FriendRes>;
 
 export function GetApplicationRecord(arg1:string):Promise<Array<api.ApplyForResponse>>;
@@ -20,6 +22,8 @@ export function IsSpeak(arg1:string,arg2:string):Promise<{[key: string]: any}>;
 export function Login(arg1:string,arg2:string):Promise<api.LoginResponse>;
 
 export function MessageList(arg1:string):Promise<Array<model.Message>>;
+
+export function QueryRoom(arg1:number):Promise<api.Response>;
 
 export function Receive(arg1:string,arg2:string,arg3:string,arg4:string):Promise<void>;
 
