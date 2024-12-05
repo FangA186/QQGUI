@@ -1,6 +1,6 @@
 <script setup>
-import a from './assets/images/lxy.webp'
-import b from './assets/images/logo-universal.png'
+import a from './assets/images/appicon.png'
+import b from './assets/images/appicon.png'
 import {ref} from "vue";
 import {useRoute} from "vue-router";
 import {useRouter} from "vue-router";
@@ -26,6 +26,15 @@ const changeBackgroundImage = (num) => {
       </transition>
     </RouterView>
   </div>
+
+<!--  <div id="logo">-->
+<!--    <RouterView v-slot="{ Component, route }" @changeBackground="changeBackgroundImage">-->
+<!--      <transition name="j" mode="out-in">-->
+<!--        <component :is="Component" :key="route.path">-->
+<!--        </component>-->
+<!--      </transition>-->
+<!--    </RouterView>-->
+<!--  </div>-->
 </template>
 
 <style>
@@ -33,11 +42,10 @@ const changeBackgroundImage = (num) => {
   width: 100%;
   height: 100%;
   margin: auto;
-  background-position: center;
-  background-repeat: no-repeat;
   background-size: 100% 100%;
   background-origin: content-box;
   display: flex;
   align-items: center;
+  background:linear-gradient(220.55deg, #565656 0%, #181818 100%);
 }
 </style>

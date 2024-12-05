@@ -15,24 +15,24 @@ func CreateRoomFactory(db *gorm.DB) *RoomService {
 	return &RoomService{Db: db}
 }
 
-func (cr *RoomService) CreateRoom(group map[string]map[string]string, UserID string, roomID string, userName string) (error, error) {
+func (cr *RoomService) CreateRoom(group map[string]map[string]string, UserID string, roomID string, userName string) (error, error, string) {
 	roomName := ""
-	fmt.Printf("userName : %s", userName)
+	//fmt.Printf("userName : %s", userName)
 	for _, user := range group {
 		roomName += user["userName"] + "--"
 	}
 	roomName = roomName + userName
 	UserID1, _ := strconv.Atoi(UserID)
 
-	fmt.Println(UserID1)
+	//fmt.Println(UserID1)
 	gp := model.Group{RoomID: roomID, Name: roomName, IsGroup: true, CreateUser: UserID1}
 	num := cr.Db.Create(&gp)
 	gm := model.GroupMember{RoomID: roomID, UserID: UserID1, CreateUser: UserID1}
 	num1 := cr.Db.Create(&gm)
 	if num.RowsAffected != 0 && num1.RowsAffected != 0 {
-		return nil, nil
+		return nil, nil, roomName
 	} else {
-		return num.Error, num1.Error
+		return num.Error, num1.Error, ""
 	}
 }
 
@@ -53,7 +53,7 @@ func (cr *RoomService) QueryRoomService(userID int) (*Response, error) {
 	}
 
 	// 执行查询，获取该用户所在房间的信息
-	err := cr.Db.Debug().Raw("SELECT "+
+	err := cr.Db.Raw("SELECT "+
 		"gm.room_id, gm.user_id, ui1.username AS user_name, ui1.avatar AS avatar,"+
 		" g.name AS name, g.create_user AS create_user FROM group_members gm "+
 		"JOIN user_infos ui1 ON ui1.id = gm.user_id JOIN `groups` g "+
@@ -64,7 +64,7 @@ func (cr *RoomService) QueryRoomService(userID int) (*Response, error) {
 		fmt.Println("Error:", err)
 		return nil, err
 	}
-	fmt.Printf("数据在这呢:%v", result)
+	//fmt.Printf("数据在这呢:%v", result)
 	// 合并房间信息
 	roomsMap := make(map[string]*Room)
 
@@ -86,7 +86,7 @@ func (cr *RoomService) QueryRoomService(userID int) (*Response, error) {
 			Avatar:   item.Avatar,
 		})
 	}
-	fmt.Printf("shuju:%v", roomsMap)
+	//fmt.Printf("shuju:%v", roomsMap)
 	// 将 map 转换成 slice
 	var rooms []Room
 	for _, room := range roomsMap {

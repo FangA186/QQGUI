@@ -409,6 +409,8 @@ const img3 = (info)=>{
       width: 100%;
       display: flex;
       background-color: #eae7e7;
+      height: 6.5vh;
+      transition: all 0.5s;
       .im {
         display: flex;
         flex-wrap: wrap; /* 允许换行 */
@@ -416,8 +418,9 @@ const img3 = (info)=>{
         //background-color: red;
         //padding-left: 1vh;
         //height: 5vh;
-        width: 3.25vw;
+        width: 3.5vw;
         padding: 0.5vh;
+
         .image-item {
           //margin-right: 0.1vh;
           //height: 2.2vh; // 3个人
@@ -450,6 +453,10 @@ const img3 = (info)=>{
         padding-right: 3vh;
       }
     }
+    .image-container:hover{
+      background-color: #72767b;
+      transition: all 0.5s;
+    }
 
 
   }
@@ -476,7 +483,7 @@ const img3 = (info)=>{
     text-align: left;
     text-indent: 1vw;
     height: 4.6vh;
-    line-height: 8vh;
+    line-height: 4.6vh;
     color: black;
     border-bottom: 1px solid black;
   }

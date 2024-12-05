@@ -53,7 +53,7 @@ func main() {
 	go app.StartHTTPServer()
 
 	err := wails.Run(&options.App{
-		Title:  "Basic Demo",
+		Title:  "",
 		Width:  1024,
 		Height: 768,
 		AssetServer: &assetserver.Options{

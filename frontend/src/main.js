@@ -41,13 +41,11 @@ watch(
                 console.log(JSON.parse(event.data))
                 const info = JSON.parse(event.data)
                 if (info.i===0){
-                    console.log(789)
-                    console.log(eventSource.readyState)
                     open1(JSON.parse(event.data))
-                }else{
-                    console.log(456)
-                    console.log(eventSource)
+                }else if (info.i===1){
                     open2(JSON.parse(event.data))
+                }else {
+                    open3(JSON.parse(event.data))
                 }
             };
 
@@ -98,6 +96,22 @@ const open2 = (obj) => {
         message: ` <div style="display: flex;justify-content: center;align-items: center;">
  <img alt="" src="${obj.avatar}" style="border-radius: 0.2vw;width: 2.5vw;height: 5vh;margin-right:0.5vh">
  <span>${obj.username}向您发来一条信息</span>
+ </div>
+`,
+        duration: 0,
+    })
+}
+const open3 = (obj) => {
+    const svgIcon = `
+        <svg class="icon" aria-hidden="true" style="width: 20px; height: 20px;">
+            <use xlink:href="#${obj.icon}"></use>
+        </svg>
+    `;
+    ElNotification({
+        title: '群聊邀请通知',
+        dangerouslyUseHTMLString: true,
+        message: ` <div style="display: flex;justify-content: center;align-items: center;">
+ <span>${obj.createName}已邀请你进入${obj.RoomName}群聊</span>
  </div>
 `,
         duration: 0,
