@@ -5,7 +5,9 @@ import {model} from '../models';
 
 export function ConsentFriend(arg1:string,arg2:string,arg3:string):Promise<string>;
 
-export function CreateRoom(arg1:{[key: string]: {[key: string]: string}}):Promise<{[key: string]: {[key: string]: string}}>;
+export function CrateRoomReceive(arg1:string,arg2:Array<{[key: string]: string}>,arg3:string,arg4:string):Promise<void>;
+
+export function CreateRoom(arg1:{[key: string]: {[key: string]: string}}):Promise<{[key: string]: any}>;
 
 export function FriendList(arg1:string):Promise<api.FriendRes>;
 

@@ -321,11 +321,47 @@ func (a *MyApp) Receive(userID, FriendID, Avatar, Username string) {
 		}
 		jsonStr, _ := json.Marshal(message1)
 		messageChan <- string(jsonStr)
-		fmt.Println("数据载荷:", message1)
 	} else {
 		// 当未找到好友的 SSE 通道时执行的逻辑
 		fmt.Printf("未找到好友的 SSE 通道，friendID: %s\n", FriendID)
 		// 这里可以选择记录日志、发送错误消息，或进行其他处理
+	}
+}
+
+func (a *MyApp) CrateRoomReceive(createUserID string, groupInfo []map[string]string, RoomName string, createName string) {
+	clientsLock.RLock()
+	defer clientsLock.RUnlock()
+	for _, item := range groupInfo {
+		for key, _ := range clients {
+			if item["userID"] == key && createUserID == key {
+				fmt.Printf("one 第一:%s,第二:%v,第三:%s\n", item["userID"], key, createUserID)
+				messages := clients[key]
+				// 直接将对象发送到好友的 SSE 通道
+				message1 := map[string]interface{}{
+					//"icon":    icon,
+					//"message": "",
+					"RoomName":   RoomName,
+					"createName": createName,
+					"i":          2,
+				}
+				jsonStr, _ := json.Marshal(message1)
+				messages <- string(jsonStr)
+			} else if createUserID == key {
+				messages := clients[key]
+				fmt.Printf("two 第一:%s,第二:%v,第三:%s\n", item["userID"], key, createUserID)
+				message1 := map[string]interface{}{
+					//"icon":    icon,
+					//"message": "",
+					"RoomName":   "创建群聊成功",
+					"createName": "",
+					"i":          2,
+				}
+				jsonStr, _ := json.Marshal(message1)
+				messages <- string(jsonStr)
+				continue
+			}
+
+		}
 	}
 }
 
@@ -421,27 +457,38 @@ func createRoomID() string {
 	v4, _ := uuid.NewRandom()
 	return v4.String()
 }
-func (a *MyApp) CreateRoom(groupInfo map[string]map[string]string) (map[string]map[string]string, error, error) {
+func (a *MyApp) CreateRoom(groupInfo map[string]map[string]string) map[string]interface{} {
 	// 打印收到的数据
 	userS := &UserService{Db: a.Db}
 	//var err error
 	roomService := &RoomService{Db: a.Db}
 	roomID := createRoomID()
+	var roomName string
+	var superUserID string
+	var superName string
+	var roominfo = make(map[string]interface{})
 	for key, user := range groupInfo {
-		fmt.Printf("Key: %s, UserID: %s, UserName: %s\n", key, user["userID"], user["userName"])
+		//fmt.Printf("Key: %s, UserID: %s, UserName: %s\n", key, user["userID"], user["userName"])
 		if key == "suser" {
-			fmt.Println(user["UserID"])
-			suserName, _ := userS.GetUserByUserID(user["userID"])
-			err, err1 := roomService.CreateRoom(groupInfo, user["userID"], roomID, suserName)
+			//fmt.Println(user["UserID"])
+			superName, _ = userS.GetUserByUserID(user["userID"])
+			superUserID = user["userID"]
+			err, err1, name := roomService.CreateRoom(groupInfo, user["userID"], roomID, superName)
+			roomName = name
 			if err != nil || err1 != nil {
-				return nil, err, err1
+				return roominfo
 			}
 		} else {
 			roomService.CreateRoomMember(roomID, user["userID"])
 		}
 	}
-
-	return groupInfo, nil, nil
+	roominfo["roomName"] = roomName
+	roominfo["superUserID"] = superUserID
+	roominfo["superName"] = superName
+	roominfo["groupInfo"] = groupInfo
+	//fmt.Printf("群组信息%v,房间名字%s,创建人的ID%s,创建人的名字%s", groupInfo, roomName, superUserID, superName)
+	fmt.Printf("群组信息:%v\n", roominfo)
+	return roominfo
 }
 
 type UserInfo struct {

@@ -1,7 +1,7 @@
 <script setup>
 import LeftNav from "./LeftNav.vue";
 import Search from "./Search.vue";
-import {CreateRoom, FriendList, QueryRoom} from "../../wailsjs/go/api/MyApp.js"
+import {CreateRoom, FriendList, QueryRoom,CrateRoomReceive} from "../../wailsjs/go/api/MyApp.js"
 import {onMounted, ref} from "vue";
 const showmessages = ref(true)
 const dialogVisible = ref(false)
@@ -94,10 +94,20 @@ const CreateRoomSure = async () => {
   try {
     // 调用后端接口
     const res = await CreateRoom(paramsMap);
-    console.log("后端返回的数据:", res);
-    console.log("id:",parseInt(localStorage.getItem("userID")))
-    const res1 =await QueryRoom(parseInt(localStorage.getItem("userID")))
-    console.log(res1)
+    let  list = []
+    console.log(res)
+    list.push(res.groupInfo)
+    console.log("后端返回的数据:", list);
+    // 转换为后端期望的格式
+    const formattedList = [];
+    for (const key in list[0]) {
+      if (list[0].hasOwnProperty(key)) {
+        formattedList.push(list[0][key]); // 提取每个对象
+      }
+    }
+    console.log("转换后的数据:", formattedList);
+    const res1 = await CrateRoomReceive(res.superUserID,formattedList,res.roomName,res.superName)
+    const res2 =await QueryRoom(parseInt(localStorage.getItem("userID")))
   } catch (error) {
     console.error("创建房间出错:", error);
   }
