@@ -328,41 +328,55 @@ func (a *MyApp) Receive(userID, FriendID, Avatar, Username string) {
 	}
 }
 
-func (a *MyApp) CrateRoomReceive(createUserID string, groupInfo []map[string]string, RoomName string, createName string) {
+func (a *MyApp) CrateRoomReceive(createUserID string, groupInfo []map[string]string, RoomName string, createName string, roomID string) {
 	clientsLock.RLock()
 	defer clientsLock.RUnlock()
-	for _, item := range groupInfo {
-		for key, _ := range clients {
-			if item["userID"] == key && createUserID == key {
-				fmt.Printf("one 第一:%s,第二:%v,第三:%s\n", item["userID"], key, createUserID)
-				messages := clients[key]
-				// 直接将对象发送到好友的 SSE 通道
-				message1 := map[string]interface{}{
-					//"icon":    icon,
-					//"message": "",
-					"RoomName":   RoomName,
-					"createName": createName,
-					"i":          2,
-				}
-				jsonStr, _ := json.Marshal(message1)
-				messages <- string(jsonStr)
-			} else if createUserID == key {
-				messages := clients[key]
-				fmt.Printf("two 第一:%s,第二:%v,第三:%s\n", item["userID"], key, createUserID)
-				message1 := map[string]interface{}{
-					//"icon":    icon,
-					//"message": "",
-					"RoomName":   "创建群聊成功",
-					"createName": "",
-					"i":          2,
-				}
-				jsonStr, _ := json.Marshal(message1)
-				messages <- string(jsonStr)
-				continue
-			}
-
-		}
+	roomservice := &RoomService{
+		Db: a.Db,
 	}
+	service, err := roomservice.QueryRoomService(roomID)
+	for key, _ := range clients {
+		if createUserID != key {
+			//fmt.Printf("one 第一:%s,第二:%v,第三:%s\n", item["userID"], key, createUserID)
+			messages := clients[key]
+			// 直接将对象发送到好友的 SSE 通道
+			message1 := map[string]interface{}{
+				//"icon":    icon,
+				//"message": "",
+				"RoomName":   RoomName,
+				"createName": createName,
+				"i":          2,
+				"icon":       "icon-fasong",
+				"info":       service,
+			}
+			jsonStr, _ := json.Marshal(message1)
+			messages <- string(jsonStr)
+		} else if createUserID == key {
+
+			fmt.Printf("这里是房间ID：%s", roomID)
+
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+			messages := clients[key]
+			//fmt.Printf("two 第一:%s,第二:%v,第三:%s\n", item["userID"], key, createUserID)
+			message1 := map[string]interface{}{
+				//"icon":    icon,
+				//"message": "",
+				"RoomName":   RoomName,
+				"createName": createName,
+				"i":          3,
+				"info":       service,
+				"icon":       "icon-duigou",
+			}
+			jsonStr, _ := json.Marshal(message1)
+			messages <- string(jsonStr)
+			continue
+		}
+
+	}
+
 }
 
 // ConsentFriend 同意好友的申请
@@ -467,14 +481,16 @@ func (a *MyApp) CreateRoom(groupInfo map[string]map[string]string) map[string]in
 	var superUserID string
 	var superName string
 	var roominfo = make(map[string]interface{})
+	var roomid string
 	for key, user := range groupInfo {
 		//fmt.Printf("Key: %s, UserID: %s, UserName: %s\n", key, user["userID"], user["userName"])
 		if key == "suser" {
 			//fmt.Println(user["UserID"])
 			superName, _ = userS.GetUserByUserID(user["userID"])
 			superUserID = user["userID"]
-			err, err1, name := roomService.CreateRoom(groupInfo, user["userID"], roomID, superName)
+			err, err1, name, roomID1 := roomService.CreateRoom(groupInfo, user["userID"], roomID, superName)
 			roomName = name
+			roomid = roomID1
 			if err != nil || err1 != nil {
 				return roominfo
 			}
@@ -486,6 +502,7 @@ func (a *MyApp) CreateRoom(groupInfo map[string]map[string]string) map[string]in
 	roominfo["superUserID"] = superUserID
 	roominfo["superName"] = superName
 	roominfo["groupInfo"] = groupInfo
+	roominfo["roomID"] = roomid
 	//fmt.Printf("群组信息%v,房间名字%s,创建人的ID%s,创建人的名字%s", groupInfo, roomName, superUserID, superName)
 	fmt.Printf("群组信息:%v\n", roominfo)
 	return roominfo

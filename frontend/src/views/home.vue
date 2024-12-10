@@ -3,7 +3,7 @@ import Index from "../components/Index.vue";
 import V3Emoji from 'vue3-emoji'
 import 'vue3-emoji/dist/style.css'
 
-import {nextTick, onMounted, ref} from "vue";
+import {nextTick, onMounted, ref, watch} from "vue";
 import {
   ConsentFriend,
   GetApplicationRecord,
@@ -13,14 +13,8 @@ import {
   QueryRoom,
   Receive
 } from "../../wailsjs/go/api/MyApp.js"
-// import { useMessageStore } from '../store/messages.js'; // 根据你的文件结构调整路径
-
-// // 获取 messageStore
-// const messageStore = useMessageStore();
-//
-// // 直接使用 messageStore.messages
-// const messages = messageStore.messages;
-// console.log(messages)
+import { useMessageStore } from '../store/messages.js'; // 根据你的文件结构调整路径
+const messageStore = useMessageStore();
 const consentList = ref([])
 const dialogVisible = ref(false)
 const ApplicationRecord = ref([])
@@ -48,11 +42,7 @@ const consentFriend = async () => {
 }
 const dispose = (num) => {
   dialogVisible.value = !dialogVisible.value
-  if (num === 1) {
-    twoli.value = true
-  } else {
-    twoli.value = false
-  }
+  twoli.value = num === 1;
 }
 const consent = async (item) => {
   const userID = localStorage.getItem("userID")
@@ -159,13 +149,25 @@ const queryRoom = async () => {
   groupList.value = res["room"]
   console.log(groupList.value)
 }
+watch(
+    messageStore.messages,
+    async (newV, oldV) => {
+      if (groupList.value === null){
+         await queryRoom()
+      }else {
+        groupList.value.push(newV[0].info.room[0])
+      }
+    }
+);
 
 onMounted(() => {
+  console.log(4546546545)
   consentFriend()
   getisspeakuserinfo()
   avatar.value = localStorage.getItem("avatar")
   userID.value = parseInt(localStorage.getItem("userID"))
   queryRoom(userID.value)
+
 })
 
 const imgG = (info) => {
@@ -224,6 +226,9 @@ const img3 = (info)=>{
       height:"1.6vh"
     }
   }
+}
+const group = (item)=>{
+  console.log(item)
 }
 </script>
 
@@ -290,7 +295,7 @@ const img3 = (info)=>{
     </template>
     <template #group>
       <ul class="group">
-        <li style="cursor: pointer; margin: 10px 0;" v-for="(item, index) in groupList" :key="index">
+        <li style="cursor: pointer;" v-for="(item, index) in groupList" :key="index" @click="group(item)">
           <div class="image-container">
             <div class="im">
               <div v-for="(img, imgIndex) in item.userInfo.slice(0,9)"  :key="imgIndex"  :style="imgG(item.userInfo)" class="image-item">
@@ -402,8 +407,9 @@ const img3 = (info)=>{
   width: 100%;
   height: 93vh;
   background-color: #eae7e7;
+  overflow-y: auto;
   li {
-    padding: 0;
+    padding: 0.3vw;
     border-bottom: 1px solid black;
     .image-container {
       width: 100%;
@@ -414,32 +420,17 @@ const img3 = (info)=>{
       .im {
         display: flex;
         flex-wrap: wrap; /* 允许换行 */
-        //width: 17%;
-        //background-color: red;
-        //padding-left: 1vh;
-        //height: 5vh;
         width: 3.5vw;
         padding: 0.5vh;
 
         .image-item {
-          //margin-right: 0.1vh;
-          //height: 2.2vh; // 3个人
-          //height: 4vh; // 2个人
           display: flex;
           flex-wrap: wrap;
           justify-content: space-around; // 水平均匀分布
           align-items: center; // 垂直居中
           gap: 0.5vw; // 图片之间的间距
           padding: 0.1vh;
-          //height: 2vh;
           img {
-            //image-rendering: -moz-crisp-edges; /* Firefox */
-            //image-rendering: -o-crisp-edges; /* Opera */
-            //image-rendering: crisp-edges;
-            //-ms-interpolation-mode: nearest-neighbor; /* IE (non-standard property) */
-            //width:0.8vw; // 3个人
-            ////width:4vw; // 2个人
-            //height: 1.6vh;
             object-fit: fill /* 保持长宽比，并填充区域 */
           }
         }
@@ -447,10 +438,13 @@ const img3 = (info)=>{
       }
 
       .s {
-        width: 90%;
+        width: 70%;
         color: black;
         text-align: right;
         padding-right: 3vh;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
       }
     }
     .image-container:hover{
@@ -460,10 +454,6 @@ const img3 = (info)=>{
 
 
   }
-
-  //li:last-child{
-  //  border-bottom: none;
-  //}
 }
 
 .searchList {

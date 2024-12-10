@@ -6,8 +6,8 @@ export function ConsentFriend(arg1, arg2, arg3) {
   return window['go']['api']['MyApp']['ConsentFriend'](arg1, arg2, arg3);
 }
 
-export function CrateRoomReceive(arg1, arg2, arg3, arg4) {
-  return window['go']['api']['MyApp']['CrateRoomReceive'](arg1, arg2, arg3, arg4);
+export function CrateRoomReceive(arg1, arg2, arg3, arg4, arg5) {
+  return window['go']['api']['MyApp']['CrateRoomReceive'](arg1, arg2, arg3, arg4, arg5);
 }
 
 export function CreateRoom(arg1) {
