@@ -15,7 +15,7 @@ func CreateRoomFactory(db *gorm.DB) *RoomService {
 	return &RoomService{Db: db}
 }
 
-func (cr *RoomService) CreateRoom(group map[string]map[string]string, UserID string, roomID string, userName string) (error, error, string) {
+func (cr *RoomService) CreateRoom(group map[string]map[string]string, UserID string, roomID string, userName string) (error, error, string, string) {
 	roomName := ""
 	//fmt.Printf("userName : %s", userName)
 	for _, user := range group {
@@ -30,9 +30,9 @@ func (cr *RoomService) CreateRoom(group map[string]map[string]string, UserID str
 	gm := model.GroupMember{RoomID: roomID, UserID: UserID1, CreateUser: UserID1}
 	num1 := cr.Db.Create(&gm)
 	if num.RowsAffected != 0 && num1.RowsAffected != 0 {
-		return nil, nil, roomName
+		return nil, nil, roomName, gp.RoomID
 	} else {
-		return num.Error, num1.Error, ""
+		return num.Error, num1.Error, "", ""
 	}
 }
 
@@ -42,7 +42,7 @@ func (cr *RoomService) CreateRoomMember(roomID string, userID string) {
 	cr.Db.Create(&gm)
 }
 
-func (cr *RoomService) QueryRoomService(userID int) (*Response, error) {
+func (cr *RoomService) QueryRoomService(userID interface{}) (*Response, error) {
 	var result []struct {
 		RoomID     string `json:"room_id"`
 		UserID     int    `json:"user_id"`
@@ -51,14 +51,24 @@ func (cr *RoomService) QueryRoomService(userID int) (*Response, error) {
 		Name       string `json:"name"`
 		CreateUser int    `json:"create_user"`
 	}
-
+	var sql string
+	var x string
+	if intVal, ok := userID.(int); ok {
+		fmt.Println("数字了")
+		sql = fmt.Sprintf("(SELECT room_id FROM group_members WHERE user_id = ?)")
+		x = strconv.Itoa(intVal)
+	} else if strVal, ok1 := userID.(string); ok1 {
+		fmt.Println("字符串了")
+		sql = fmt.Sprintf("(SELECT room_id FROM group_members WHERE room_id = ?)")
+		x = strVal
+	}
 	// 执行查询，获取该用户所在房间的信息
-	err := cr.Db.Raw("SELECT "+
+	err := cr.Db.Debug().Raw("SELECT "+
 		"gm.room_id, gm.user_id, ui1.username AS user_name, ui1.avatar AS avatar,"+
 		" g.name AS name, g.create_user AS create_user FROM group_members gm "+
 		"JOIN user_infos ui1 ON ui1.id = gm.user_id JOIN `groups` g "+
 		"ON g.room_id = gm.room_id WHERE gm.room_id IN "+
-		"(SELECT room_id FROM group_members WHERE user_id = ?)", userID).Scan(&result).Error
+		sql, x).Scan(&result).Error
 
 	if err != nil {
 		fmt.Println("Error:", err)
