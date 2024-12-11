@@ -35,7 +35,7 @@ var upgrader = websocket.Upgrader{
 func HandleWebSocket(w http.ResponseWriter, r *http.Request, db *gorm.DB) {
 	// 获取请求中的查询参数
 	var wsinfo websocketInfo
-	var message model.Message // 定义消息结构体
+	//var message model.Message // 定义消息结构体
 	//_ = r.URL.Query().Get("user_id")            // 获取 user_id
 	useruuid := r.URL.Query().Get("userIDUUID") // 获取用户 UUID
 	IsGroup := r.URL.Query().Get("IsGroup")     // 获取是否为群聊的标识
@@ -80,7 +80,7 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request, db *gorm.DB) {
 
 	// 处理客户端发送的消息
 	for {
-
+		var message model.Message      // 每次循环创建新的实例，避免复用问题
 		err := conn.ReadJSON(&message) // 读取客户端发送的 JSON 消息
 		if err != nil {
 			fmt.Println(err) // 打印错误信息
@@ -95,11 +95,16 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request, db *gorm.DB) {
 			mu.Unlock() // 解锁
 			return      // 退出循环
 		}
+		fmt.Println(message)
+		fmt.Println(&message)
+		//message.ID = 0
 		// 将消息保存到数据库
+		mu.Lock()
 		result := db.Create(&message)
+		mu.Unlock()
 		if result.Error != nil {
-			fmt.Println(err) // 打印保存失败的错误信息
-			continue         // 跳过当前循环
+			fmt.Println(result.Error) // 打印保存失败的错误信息
+			continue                  // 跳过当前循环
 		}
 		// 发布消息到 Redis
 		sqlconfig.PublishMessage(channel, message)
