@@ -35,8 +35,16 @@ func PublishMessage(channel string, message model.Message) {
 	}
 }
 
+//var pubsub *redis.PubSub
+//var once sync.Once
+
 // SubscribeMessage 订阅 Redis 消息
 func SubscribeMessage(channel string) *redis.PubSub {
+	//once.Do(func() {
+	//	pubsub = rdb.Subscribe(context.Background(), channel)
+	//})
+	//return pubsub
+	fmt.Println(channel)
 	pubsub := rdb.Subscribe(context.Background(), channel) // 订阅指定频道
 	return pubsub                                          // 返回 PubSub 实例
 }

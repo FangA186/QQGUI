@@ -9,7 +9,7 @@ const dialogVisible = ref(false)
 const avatar = ref('')
 const friends = ref([])
 const choiceFriendList = ref([])
-const showGroup = ref(false)
+const showGroup = ref()
 const createGroup = async () => {
   dialogVisible.value = true
   const res = await FriendList(localStorage.getItem("userID"))
@@ -52,11 +52,19 @@ const toggleCheckbox = (item) => {
 
 // 处理接收到的事件
 function handleClear(data) {
-  // showmessages.value = data.message
-
-  console.log("群聊")
-  showmessages.value = !data.message1
-  showGroup.value = data.message1
+  if (data.message === false) {
+    showmessages.value = data.message
+    showGroup.value = false
+  } else if (data.message === true) {
+    showmessages.value = data.message
+    showGroup.value = false
+  }else if(data.message1 === false){
+    showmessages.value = true
+    showGroup.value = data.message1
+  }else if(data.message1 === true){
+    showmessages.value = false
+    showGroup.value = data.message1
+  }
 
 }
 
@@ -111,9 +119,6 @@ const CreateRoomSure = async () => {
   } catch (error) {
     console.error("创建房间出错:", error);
   }
-}
-const qiehuan = () => {
-
 }
 </script>
 
@@ -236,8 +241,7 @@ const qiehuan = () => {
 
       img {
         width: 13%;
-      //border-radius: 1vh; position: absolute;
-        left: 6%;
+      //border-radius: 1vh; position: absolute; left: 6%;
         top: 50%;
         image-rendering: -moz-crisp-edges; /* Firefox */
         image-rendering: -o-crisp-edges; /* Opera */
