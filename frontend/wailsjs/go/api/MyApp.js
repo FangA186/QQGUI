@@ -6,6 +6,10 @@ export function ConsentFriend(arg1, arg2, arg3) {
   return window['go']['api']['MyApp']['ConsentFriend'](arg1, arg2, arg3);
 }
 
+export function CrateRoomReceive(arg1, arg2, arg3, arg4, arg5) {
+  return window['go']['api']['MyApp']['CrateRoomReceive'](arg1, arg2, arg3, arg4, arg5);
+}
+
 export function CreateRoom(arg1) {
   return window['go']['api']['MyApp']['CreateRoom'](arg1);
 }
@@ -22,6 +26,10 @@ export function GetConsentList(arg1) {
   return window['go']['api']['MyApp']['GetConsentList'](arg1);
 }
 
+export function GetGroupMessageList(arg1) {
+  return window['go']['api']['MyApp']['GetGroupMessageList'](arg1);
+}
+
 export function GetIsSpeakUserInfo(arg1) {
   return window['go']['api']['MyApp']['GetIsSpeakUserInfo'](arg1);
 }
@@ -36,10 +44,6 @@ export function IsSpeak(arg1, arg2) {
 
 export function Login(arg1, arg2) {
   return window['go']['api']['MyApp']['Login'](arg1, arg2);
-}
-
-export function MessageList(arg1) {
-  return window['go']['api']['MyApp']['MessageList'](arg1);
 }
 
 export function QueryRoom(arg1) {

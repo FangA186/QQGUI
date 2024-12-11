@@ -115,6 +115,76 @@ export namespace api {
 		    return a;
 		}
 	}
+	export class GroupMessageList {
+	    ID: number;
+	    // Go type: time
+	    CreatedAt: any;
+	    // Go type: time
+	    UpdatedAt: any;
+	    // Go type: gorm
+	    DeletedAt: any;
+	    content: string;
+	    send_user_id: number;
+	    receiver_user_id: number;
+	    room_id: string;
+	    file_url: string;
+	    ID: number;
+	    // Go type: time
+	    CreatedAt: any;
+	    // Go type: time
+	    UpdatedAt: any;
+	    // Go type: gorm
+	    DeletedAt: any;
+	    Username: string;
+	    Password: string;
+	    Signature: string;
+	    Avatar: string;
+	    UUID: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new GroupMessageList(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ID = source["ID"];
+	        this.CreatedAt = this.convertValues(source["CreatedAt"], null);
+	        this.UpdatedAt = this.convertValues(source["UpdatedAt"], null);
+	        this.DeletedAt = this.convertValues(source["DeletedAt"], null);
+	        this.content = source["content"];
+	        this.send_user_id = source["send_user_id"];
+	        this.receiver_user_id = source["receiver_user_id"];
+	        this.room_id = source["room_id"];
+	        this.file_url = source["file_url"];
+	        this.ID = source["ID"];
+	        this.CreatedAt = this.convertValues(source["CreatedAt"], null);
+	        this.UpdatedAt = this.convertValues(source["UpdatedAt"], null);
+	        this.DeletedAt = this.convertValues(source["DeletedAt"], null);
+	        this.Username = source["Username"];
+	        this.Password = source["Password"];
+	        this.Signature = source["Signature"];
+	        this.Avatar = source["Avatar"];
+	        this.UUID = source["UUID"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	
 	export class LoginResponse {
 	    message: string;
@@ -251,60 +321,6 @@ export namespace api {
 	        this.Avatar = source["Avatar"];
 	        this.UUID = source["UUID"];
 	        this.is_friend = source["is_friend"];
-	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
-	}
-
-}
-
-export namespace model {
-	
-	export class Message {
-	    ID: number;
-	    // Go type: time
-	    CreatedAt: any;
-	    // Go type: time
-	    UpdatedAt: any;
-	    // Go type: gorm
-	    DeletedAt: any;
-	    content: string;
-	    send_user_id: number;
-	    receiver_user_id: number;
-	    room_id: string;
-	    file_url: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new Message(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.ID = source["ID"];
-	        this.CreatedAt = this.convertValues(source["CreatedAt"], null);
-	        this.UpdatedAt = this.convertValues(source["UpdatedAt"], null);
-	        this.DeletedAt = this.convertValues(source["DeletedAt"], null);
-	        this.content = source["content"];
-	        this.send_user_id = source["send_user_id"];
-	        this.receiver_user_id = source["receiver_user_id"];
-	        this.room_id = source["room_id"];
-	        this.file_url = source["file_url"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

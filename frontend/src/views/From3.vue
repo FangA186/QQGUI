@@ -66,9 +66,11 @@ const onLoginClick = async (num) => {
         emit('changeBackground', num)
         await router.push("/index")
       } else {
+        alert("账户名或密码不正确")
         console.log("账户名或密码不正确")
       }
     } catch (error) {
+      alert(error)
       console.error("登录失败", error);
     }
   } else {
@@ -107,11 +109,17 @@ const onLoginClick = async (num) => {
   justify-content: center;
   height: 50%;
   width: 50%;
-  background-color: #cfd9df;
+  //background:linear-gradient(220.55deg, #00E0EE 0%, #AD00FE 100%);
+  background:linear-gradient(20.55deg, #91727a 0%, #4b62a8  50%);
   border-radius: 1vh;
   opacity: 0.84;
-  margin-left: 1vw;
-  position: relative;
+  //margin-left: 1vw;
+  margin:auto;
+  left:0;
+  right:0;
+  top:0;
+  bottom:0;
+  position: absolute;
 
   form {
     display: flex;

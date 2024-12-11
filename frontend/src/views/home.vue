@@ -3,24 +3,19 @@ import Index from "../components/Index.vue";
 import V3Emoji from 'vue3-emoji'
 import 'vue3-emoji/dist/style.css'
 
-import {nextTick, onMounted, ref} from "vue";
+import {nextTick, onMounted, ref, watch} from "vue";
 import {
   ConsentFriend,
   GetApplicationRecord,
   GetConsentList,
   GetIsSpeakUserInfo,
   MessageList,
+  QueryRoom,
   Receive,
-    QueryRoom
+    GetGroupMessageList
 } from "../../wailsjs/go/api/MyApp.js"
-// import { useMessageStore } from '../store/messages.js'; // 根据你的文件结构调整路径
-
-// // 获取 messageStore
-// const messageStore = useMessageStore();
-//
-// // 直接使用 messageStore.messages
-// const messages = messageStore.messages;
-// console.log(messages)
+import { useMessageStore } from '../store/messages.js'; // 根据你的文件结构调整路径
+const messageStore = useMessageStore();
 const consentList = ref([])
 const dialogVisible = ref(false)
 const ApplicationRecord = ref([])
@@ -29,13 +24,16 @@ const speakList = ref([])
 const oneinfo = ref([])
 const show = ref(false)
 const content = ref("")
-let socket
+// let socket
+let groupSocket
 const messageList = ref([])
 const avatar = ref('')
 const userID = ref('')
 const left = ref('left')
 const right = ref('right')
 const groupList = ref([])
+const GroupOrUser = ref(false)
+const GroupRoomID = ref("")
 const clickEmoji = (val) => {
   content.value = content.value + val
 }
@@ -48,11 +46,7 @@ const consentFriend = async () => {
 }
 const dispose = (num) => {
   dialogVisible.value = !dialogVisible.value
-  if (num === 1) {
-    twoli.value = true
-  } else {
-    twoli.value = false
-  }
+  twoli.value = num === 1;
 }
 const consent = async (item) => {
   const userID = localStorage.getItem("userID")
@@ -66,68 +60,95 @@ const getisspeakuserinfo = async () => {
   speakList.value = await GetIsSpeakUserInfo(localStorage.getItem("userID"))
   console.log(speakList.value)
 }
-const GenerateRoomID = (uuid1,uuid2)=>{
-  if (uuid1<uuid2){
+const GenerateRoomID = (uuid1, uuid2) => {
+  if (uuid1 < uuid2) {
     return uuid1 + "_" + uuid2
   }
   return uuid2 + "_" + uuid1
 }
 const sendMessage = async () => {
-  await Receive(localStorage.getItem("userID"),
-      JSON.stringify(oneinfo.value.friend_id),
-      oneinfo.value.friend_avatar,
-      oneinfo.value.friend_username,
-  )
-  socket.send(JSON.stringify({
-    two:2,
-    content:content.value,
-    send_user_id:parseInt(localStorage.getItem("userID")),
-    receiver_user_id:oneinfo.value.friend_id,
-    file_url: "",
-    room_id:GenerateRoomID(localStorage.getItem("uuid"),oneinfo.value.friend_uuid)
-  }))
+
+  if (GroupOrUser.value===false){
+    console.log(112233)
+    await Receive(localStorage.getItem("userID"),
+        JSON.stringify(oneinfo.value.friend_id),
+        oneinfo.value.applicant_avatar,
+        oneinfo.value.applicant_username,
+    )
+    socket.send(JSON.stringify({
+      two: 2,
+      content: content.value,
+      send_user_id: parseInt(localStorage.getItem("userID")),
+      receiver_user_id: oneinfo.value.friend_id,
+      file_url: "",
+      room_id: GenerateRoomID(localStorage.getItem("uuid"), oneinfo.value.friend_uuid)
+    }))
+  }else {
+    console.log(7778899)
+    groupSocket.send(JSON.stringify({
+      two:2,
+      content:content.value,
+      send_user_id: parseInt(localStorage.getItem("userID")),
+      receiver_user_id:0,
+      room_id:GroupRoomID.value
+    }))
+  }
+
   content.value = ""
 }
-const dialogue = (item) => {
+let sockets = {};  // 用来存储不同房间或对话的 WebSocket 连接
+
+const dialogue = async (item) => {
+  GroupOrUser.value = false;
   oneinfo.value = item;
   show.value = true;
-  // const userId = localStorage.getItem("userID"); // 用户 ID
+  console.log(oneinfo.value);
+
   const userIDUUID = localStorage.getItem("uuid");
   const friendIDUUID = item.friend_uuid;
   const isGroup = 0; // 是否为群聊
   const roomid = GenerateRoomID(userIDUUID, friendIDUUID);
 
-  // 检查当前 socket 是否已经存在且处于打开状态
-  if (socket && socket.readyState === WebSocket.OPEN) {
-    console.log("WebSocket 已经连接，无需重新建立连接");
-    return; // 如果连接已经打开，直接返回
+  // 检查该房间是否已经有 WebSocket 连接
+  if (sockets[roomid] && sockets[roomid].readyState === WebSocket.OPEN) {
+    // 如果该房间的 WebSocket 已经连接，则无需重新连接
+    messageList.value = await GetGroupMessageList(roomid);
+    console.log(messageList.value)
+    console.log("该房间的 WebSocket 已经连接，无需重新连接");
+    return;
   }
 
   // 建立新的 WebSocket 连接
   const wsUrl = `ws://127.0.0.1:8080/ws?&userIDUUID=${userIDUUID}&IsGroup=${isGroup}&roomid=${roomid}`;
-  socket = new WebSocket(wsUrl);
+  const socket = new WebSocket(wsUrl);
+
+  // 将新连接保存在 sockets 对象中，按 roomid 管理
+  sockets[roomid] = socket;
 
   socket.onopen = async function () {
-    messageList.value = await MessageList(roomid)
-    scrollToBottom()
+    messageList.value = await GetGroupMessageList(roomid);
+    console.log(messageList.value);
+    scrollToBottom();
   };
 
   socket.onmessage = function (event) {
-    messageList.value.push(JSON.parse(event.data))
-    console.log(JSON.parse(event.data))
-    scrollToBottom()
+    messageList.value.push(JSON.parse(event.data));
+    console.log(JSON.parse(event.data));
+    scrollToBottom();
   };
 
   socket.onclose = function () {
     console.log("连接已关闭");
-    socket = null; // 连接关闭时，清空 socket 变量
+    sockets[roomid] = null;  // 关闭连接时，清除对应房间的 WebSocket 连接
   };
 
   socket.onerror = function (error) {
     console.error("WebSocket 错误:", error);
   };
 };
-const choiceFile = ()=>{
+
+
+const choiceFile = () => {
   /*
   * 选择文件上传*
   * */
@@ -153,28 +174,130 @@ const scrollToBottom = () => {
     }
   });
 };
-const queryRoom = async ()=>{
+const queryRoom = async () => {
   const res = await QueryRoom(parseInt(localStorage.getItem("userID")))
   console.log(res["room"])
   groupList.value = res["room"]
   console.log(groupList.value)
 }
-// 根据图片数量动态生成栅格布局的样式
-const getGridStyle = (imageCount) => {
-  let columns = 1 // 默认一列
-  if (imageCount % 2 === 0) {
-    columns = 2 // 偶数图片，使用两列
-  } else if (imageCount % 3 === 0) {
-    columns = 3 // 奇数图片，最多三列
-  }
-}
+watch(
+    messageStore.messages,
+    async (newV, oldV) => {
+      if (groupList.value === null){
+         await queryRoom()
+      }else {
+        groupList.value.push(newV[0].info.room[0])
+      }
+    }
+);
+
 onMounted(() => {
   consentFriend()
   getisspeakuserinfo()
   avatar.value = localStorage.getItem("avatar")
   userID.value = parseInt(localStorage.getItem("userID"))
   queryRoom(userID.value)
+
 })
+
+const imgG = (info) => {
+  // 图片排列
+  if (info.length === 2) {
+    return {
+      flex: "0 1"
+    }
+  } else if (info.length === 3) {
+    return {
+      flex:"0 1"
+    }
+
+  } else if (info.length === 4) {
+    return {
+      flex: "0 1"
+    }
+  } else if (info.length === 5) {
+    return {
+      flex: "0 1"
+    }
+  } else if (info.length === 6) {
+    return {
+      flex: "0 1"
+    }
+  } else if (info.length === 7) {
+    return {
+      flex: "0 1"
+    }
+  } else if (info.length === 8) {
+    return {
+      flex: "0 1"
+    }
+  } else if (info.length === 9) {
+    return {
+      flex: "0 1"
+    }
+  } else {
+    // 0?
+  }
+}
+const img3 = (info)=>{
+  if (info.length===2){
+    return {
+      width:"1.2vw",
+      height:"2.4vh"
+    }
+  }else if (info.length===3){
+    return {
+      width:"1.2vw",
+      height:"2.4vh"
+    }
+  }else {
+    return {
+      width:"0.8vw",
+      height:"1.6vh"
+    }
+  }
+}
+// let groupSocket = {}
+const group = (item)=>{
+  GroupRoomID.value = item.roomID
+  GroupOrUser.value = true
+  oneinfo.value = item
+  oneinfo.value.friend_username = item.roomName
+  show.value = true;
+  const userIDUUID = localStorage.getItem("uuid");
+  // console.log(oneinfo.value)
+  // const userId = localStorage.getItem("userID"); // 用户 ID
+  const isGroup = 1; // 是否为群聊
+
+
+  // 建立新的 WebSocket 连接
+  const wsUrl = `ws://127.0.0.1:8080/ws?&IsGroup=${isGroup}&roomid=${item.roomID}&userIDUUID=${userIDUUID}`;
+  groupSocket = new WebSocket(wsUrl);
+
+  groupSocket.onopen = async function () {
+    console.log(groupSocket)
+    const res = await GetGroupMessageList(item.roomID)
+    console.log(res)
+    messageList.value = await GetGroupMessageList(item.roomID)
+    // console.log(messageList.value)
+    scrollToBottom()
+  };
+
+  groupSocket.onmessage = function (event) {
+    // messageList.value.push(JSON.parse(event.data))
+    console.log(JSON.parse(event.data))
+    scrollToBottom()
+  };
+
+  groupSocket.onclose = function () {
+    console.log("连接已关闭");
+    groupSocket = null; // 连接关闭时，清空 socket 变量
+  };
+
+  groupSocket.onerror = function (error) {
+    console.error("WebSocket 错误:", error);
+  };
+}
 </script>
 
 <template>
@@ -240,37 +363,42 @@ onMounted(() => {
     </template>
     <template #group>
       <ul class="group">
-        <li style="cursor: pointer; margin: 10px 0;" v-for="(item, index) in groupList" :key="index">
+        <li style="cursor: pointer;" v-for="(item, index) in groupList" :key="index" @click="group(item)">
           <div class="image-container">
             <div class="im">
-              <div v-for="(img, imgIndex) in item.userInfo" :key="imgIndex" class="image-item">
-                <img :src="img.avatar" alt="image" />
+              <div v-for="(img, imgIndex) in item.userInfo.slice(0,9)"  :key="imgIndex"  :style="imgG(item.userInfo)" class="image-item">
+                <img :src="img.avatar" alt="image" :style="img3(item.userInfo)"/>
               </div>
             </div>
-
             <div class="s">{{ item.roomName }}</div>
           </div>
         </li>
       </ul>
     </template>
-    <template #three v-if="messageList">
+    <template #three >
       <div class="dialogueList">
         <h2>{{ oneinfo.friend_username }}</h2>
         <ul class="list">
           <li :class="[userID===item.send_user_id?'right':'left']" v-for="(item,index) in messageList" :key="item.ID">
             <div v-if="userID===item.send_user_id" class="d">
-              <div style="background-color: #95ec69" class="c">{{item.content}}
-                <svg class="icon sj" aria-hidden="true" font-size="0.8vw" color="#95ec69" style="transform: rotate(90deg);margin-top: 1vh;position: absolute;margin-left: 0.3vw">
+              <div style="background-color: #95ec69" class="c">{{ item.content }}
+                <svg class="icon sj" aria-hidden="true" font-size="0.8vw" color="#95ec69"
+                     style="transform: rotate(90deg);margin-top: 1vh;position: absolute;margin-left: 0.3vw">
                   <use xlink:href="#icon-sanjiaoxing1"></use>
                 </svg>
               </div>
 
-              <img :src="userID===item.send_user_id?avatar:oneinfo.friend_avatar" alt="" style="margin-left: 1vw;margin-right: 1vw">
-
+<!--              <img :src="userID===item.send_user_id?avatar:oneinfo.friend_avatar" alt=""-->
+<!--                   style="margin-left: 1vw;margin-right: 1vw">-->
+              <img :src="item.Avatar" alt=""
+                   style="margin-left: 1vw;margin-right: 1vw">
             </div>
             <div v-else class="d">
-              <img :src="userID===item.send_user_id?avatar:oneinfo.friend_avatar" alt="" style="margin-left: 0.5vw;margin-right: 1vw">
-              <div style="background-color: #ffffff" class="c">{{item.content}}
+<!--              <img :src="userID===item.send_user_id?avatar:oneinfo.friend_avatar" alt=""-->
+<!--                   style="margin-left: 0.5vw;margin-right: 1vw">-->
+              <img :src="item.Avatar" alt=""
+                   style="margin-left: 1vw;margin-right: 1vw">
+              <div style="background-color: #ffffff" class="c">{{ item.content }}
                 <div class="x">
 
                 </div>
@@ -286,7 +414,7 @@ onMounted(() => {
               style="display: none;"
               @change="handleFileChange"
           />
-          <svg class="icon wj" aria-hidden="true"  style="cursor: pointer" font-size="0.8vw" @click="choiceFile">
+          <svg class="icon wj" aria-hidden="true" style="cursor: pointer" font-size="0.8vw" @click="choiceFile">
             <use xlink:href="#icon-wenjian"></use>
           </svg>
           <textarea id="story" name="story" rows="5" cols="33" v-model="content"></textarea>
@@ -318,6 +446,7 @@ onMounted(() => {
       position: absolute;
       right: 0
     }
+
     img {
       width: 13%;
       border-radius: 0.5vh;
@@ -326,7 +455,6 @@ onMounted(() => {
       height: 4vh;
       image-rendering: -moz-crisp-edges; /* Firefox */
       image-rendering: -o-crisp-edges; /* Opera */
-      image-rendering: -webkit-optimize-contrast;
       image-rendering: crisp-edges;
       -ms-interpolation-mode: nearest-neighbor; /* IE (non-standard property) */
       transform: translateY(-50%);
@@ -343,56 +471,62 @@ onMounted(() => {
 
 
 }
+
 .group {
   padding: 0;
   list-style: none;
   width: 100%;
-
+  height: 93vh;
+  background-color: #eae7e7;
+  overflow-y: auto;
   li {
-    padding: 0;
-    //padding: 1vh;
-    //background-color: aquamarine;
+    padding: 0.3vw;
+    border-bottom: 1px solid black;
     .image-container {
       width: 100%;
-      background-color: #67c23a;
       display: flex;
-      //flex-wrap: wrap; /* 允许换行 */
-      gap: 10px; /* 设置图片之间的间距 */
-      //align-items: center; /* 居中对齐图片 */
-      //justify-content: center; /* 图片水平居中 */
-      //background-color: #67c23a;
-      .im{
-        width: 100px;
+      background-color: #eae7e7;
+      height: 6.5vh;
+      transition: all 0.5s;
+      .im {
         display: flex;
-      flex-wrap: wrap; /* 允许换行 */
-        background-color: yellow;
-        padding: 0;
+        flex-wrap: wrap; /* 允许换行 */
+        width: 3.5vw;
+        padding: 0.5vh;
+
         .image-item {
-          flex: 0 1 30%; /* 每个图片占 30% 宽度，最多三列 */
-          max-width: 100px; /* 最大宽度可以限制 */
-          margin-bottom: 10px;
-          background-color: red;
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: space-around; // 水平均匀分布
+          align-items: center; // 垂直居中
+          gap: 0.5vw; // 图片之间的间距
+          padding: 0.1vh;
           img {
-            width: 100%;
-            height: auto;
-            object-fit: cover; /* 保持长宽比，并填充区域 */
+            object-fit: fill /* 保持长宽比，并填充区域 */
           }
         }
 
       }
+
       .s {
         width: 70%;
-        color: white;
-        text-align: center;
-        margin-top: 10px;
+        color: black;
+        text-align: right;
+        padding-right: 3vh;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
       }
     }
-
-
+    .image-container:hover{
+      background-color: #72767b;
+      transition: all 0.5s;
+    }
 
 
   }
 }
+
 .searchList {
   height: 95vh;
   background-color: #d9d8d8;
@@ -405,11 +539,12 @@ onMounted(() => {
 
 .dialogueList {
   height: 100vh;
+
   h2 {
     text-align: left;
     text-indent: 1vw;
-    height: 8vh;
-    line-height: 8vh;
+    height: 4.6vh;
+    line-height: 4.6vh;
     color: black;
     border-bottom: 1px solid black;
   }
@@ -419,6 +554,7 @@ onMounted(() => {
     padding: 0;
     margin: 0;
     overflow-y: auto;
+
     .left {
       list-style: none;
       text-align: left;
@@ -436,16 +572,19 @@ onMounted(() => {
       align-items: center;
 
     }
+
     img {
       width: 2vw;
       height: 4vh;
     }
+
     .d {
       margin-left: 0.5vw;
       color: black;
       display: flex;
       position: relative;
-      .c{
+
+      .c {
         padding-left: 1vh;
         padding-right: 1vh;
         height: 4vh;

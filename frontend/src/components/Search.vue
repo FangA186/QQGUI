@@ -38,7 +38,6 @@ const addFriend = async ()=>{
   await HandleAddFriendRequest(agr1,agr2,false)
 }
 const qiehuan = ()=>{
-
   showGroup.value = !showGroup.value
   emit('clear',{message1:showGroup.value})
   // if (showGroup.value){

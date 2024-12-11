@@ -6,7 +6,7 @@ import router from "./router/router.js";
 import ElementPlus, {ElNotification} from 'element-plus';
 import {createPinia} from 'pinia';
 import {useUserStore} from './store/userStore.js'; // 确保你有 userStore
-// import { useMessageStore } from './store/messages.js';
+import { useMessageStore } from './store/messages.js';
 import 'element-plus/dist/index.css';
 const app = createApp(App);
 
@@ -17,7 +17,7 @@ app.use(pinia).use(router).use(ElementPlus);
 
 // 必须在应用挂载之后调用 useUserStore
 const userStore = useUserStore();
-// const messageStore = useMessageStore();
+const messageStore = useMessageStore();
 // 监听用户 ID 变化，建立 SSE 连接
 watch(
     () => userStore.userId, // 监听用户ID变化
@@ -37,17 +37,19 @@ watch(
                 console.log(eventSource)
             };
             eventSource.onmessage = function (event) {
-                // messageStore.addMessage(JSON.parse(event.data)); // 将消息存储到 store 中
+
                 console.log(JSON.parse(event.data))
                 const info = JSON.parse(event.data)
                 if (info.i===0){
-                    console.log(789)
-                    console.log(eventSource.readyState)
                     open1(JSON.parse(event.data))
-                }else{
-                    console.log(456)
-                    console.log(eventSource)
+                }else if (info.i===1){
                     open2(JSON.parse(event.data))
+                }else if (info.i ===2){
+                    open3(JSON.parse(event.data))
+                }else {
+
+                    open4(JSON.parse(event.data))
+                    messageStore.addMessage(JSON.parse(event.data)); // 将消息存储到 store 中
                 }
             };
 
@@ -83,7 +85,7 @@ const open1 = (obj) => {
  <span>${obj.friend.Username}${obj.message}</span>
  </div>
 `,
-        duration: 0,
+        duration: 2000,
     })
 }
 const open2 = (obj) => {
@@ -100,7 +102,41 @@ const open2 = (obj) => {
  <span>${obj.username}向您发来一条信息</span>
  </div>
 `,
-        duration: 0,
+        duration: 2000,
+    })
+}
+const open3 = (obj) => {
+    const svgIcon = `
+        <svg class="icon" aria-hidden="true" style="width: 20px; height: 20px;">
+            <use xlink:href="#${obj.icon}"></use>
+        </svg>
+    `;
+    ElNotification({
+        title: '群聊邀请通知',
+        dangerouslyUseHTMLString: true,
+        message: ` <div style="display: flex;justify-content: center;align-items: center;">
+ 
+ <span>${svgIcon}${obj.createName}已邀请你进入${obj.RoomName}群聊</span>
+ </div>
+`,
+        duration: 2000,
+    })
+}
+const open4 = (obj)=>{
+    const svgIcon = `
+        <svg class="icon" aria-hidden="true" style="width: 20px; height: 20px;">
+            <use xlink:href="#${obj.icon}"></use>
+        </svg>
+    `;
+    ElNotification({
+        title: '群聊创建通知',
+        dangerouslyUseHTMLString: true,
+        message: ` <div style="display: flex;justify-content: center;align-items: center;">
+  
+ <span>${svgIcon}你已成功创建${obj.RoomName}群聊</span>
+ </div>
+`,
+        duration: 2000,
     })
 }
 // 应用挂载之后再执行逻辑
