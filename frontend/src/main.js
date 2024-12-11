@@ -85,7 +85,7 @@ const open1 = (obj) => {
  <span>${obj.friend.Username}${obj.message}</span>
  </div>
 `,
-        duration: 0,
+        duration: 2000,
     })
 }
 const open2 = (obj) => {
@@ -102,7 +102,7 @@ const open2 = (obj) => {
  <span>${obj.username}向您发来一条信息</span>
  </div>
 `,
-        duration: 0,
+        duration: 2000,
     })
 }
 const open3 = (obj) => {
@@ -119,7 +119,7 @@ const open3 = (obj) => {
  <span>${svgIcon}${obj.createName}已邀请你进入${obj.RoomName}群聊</span>
  </div>
 `,
-        duration: 0,
+        duration: 2000,
     })
 }
 const open4 = (obj)=>{
@@ -136,7 +136,7 @@ const open4 = (obj)=>{
  <span>${svgIcon}你已成功创建${obj.RoomName}群聊</span>
  </div>
 `,
-        duration: 0,
+        duration: 2000,
     })
 }
 // 应用挂载之后再执行逻辑

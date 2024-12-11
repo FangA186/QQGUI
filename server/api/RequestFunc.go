@@ -460,9 +460,16 @@ func (a *MyApp) GetIsSpeakUserInfo(userID string) []ApplyForResponse {
 }
 
 // MessageList 获取当前用户与某个用户的聊天记录
-func (a *MyApp) MessageList(roomID string) []model.Message {
+//func (a *MyApp) MessageList(roomID string) []model.Message {
+//	getMessage := &MessageService{Db: a.Db}
+//	list := getMessage.GetMessages(roomID)
+//	return list
+//}
+
+// GetGroupMessageList  获取当前用户与某个用户的聊天记录
+func (a *MyApp) GetGroupMessageList(roomID string) []GroupMessageList {
 	getMessage := &MessageService{Db: a.Db}
-	list := getMessage.GetMessages(roomID)
+	list := getMessage.GetGroupMessages(roomID)
 	return list
 }
 
