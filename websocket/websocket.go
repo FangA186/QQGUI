@@ -4,198 +4,231 @@ import (
 	"QQGUI/config/sqlconfig"
 	"QQGUI/model"
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 	"net/http"
-	"strings"
 	"sync"
 )
 
-type websocketInfo struct {
-	WS       *websocket.Conn
-	UserID   string
-	RoomInfo map[string][]string
-	mu       sync.Mutex // 添加互斥锁以保护 RoomInfo
+// GroupWebSocket 结构体，用于存储特定房间的 WebSocket 连接信息。
+// - WsRoomInfo: 存储房间中每个用户的 WebSocket 连接列表。
+// - mu: 确保对 WsRoomInfo 的并发访问是安全的。
+type GroupWebSocket struct {
+	WsRoomInfo map[string][]*websocket.Conn // 用户ID与其对应WebSocket连接的映射。
+	mu         sync.Mutex                   // 保护 WsRoomInfo 的互斥锁。
+}
+type DebugGroupWebSocket struct {
+	WsRoomInfo map[string][]string `json:"WsRoomInfo"`
 }
 
-// 定义全局变量
+// 全局变量
 var (
-	clients []*websocketInfo
-	mu      sync.Mutex // 用于保护对 clients 的并发访问
+	clients = make(map[string]*GroupWebSocket) // 存储所有房间的 WebSocket 信息。
+	mu      sync.Mutex                         // 保护 clients 的全局互斥锁。
 )
 
-// 定义 WebSocket 升级器，并自定义 CheckOrigin
+// upgrader 配置 WebSocket 的升级器。
+// - CheckOrigin: 允许所有来源连接。
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
-		// 允许所有来源，防止跨域问题
 		return true
 	},
 }
 
-// HandleWebSocket 处理 WebSocket 连接
-func HandleWebSocket(w http.ResponseWriter, r *http.Request, db *gorm.DB) {
-	// 获取请求中的查询参数
-	var wsinfo websocketInfo
-	var message model.Message // 定义消息结构体
-	//_ = r.URL.Query().Get("user_id")            // 获取 user_id
-	useruuid := r.URL.Query().Get("userIDUUID") // 获取用户 UUID
-	IsGroup := r.URL.Query().Get("IsGroup")     // 获取是否为群聊的标识
-	roomid := r.URL.Query().Get("roomid")       // 获取房间 ID
-	_ = r.URL.Query().Get("userid")
-	var channel string // 定义频道变量
-	// 根据 IsGroup 参数决定频道类型
-	if IsGroup == "1" {
-		channel = "group:" + useruuid + roomid // 设置为群聊频道
-		//
-		// 确保 wsinfo.RoomInfo 已初始化
-		if wsinfo.RoomInfo == nil {
-			wsinfo.RoomInfo = make(map[string][]string)
-		}
+// DebugClients 返回一个可序列化的调试版本的 clients。
+func DebugClients() map[string]*DebugGroupWebSocket {
+	mu.Lock()
+	defer mu.Unlock()
 
-		// 将用户 ID 添加到指定房间
-		wsinfo.mu.Lock()         // 加锁保护 RoomInfo
-		defer wsinfo.mu.Unlock() // 确保函数退出时解锁
-
-		// 如果房间不存在，则初始化
-		if _, exists := wsinfo.RoomInfo[roomid]; !exists {
-			wsinfo.RoomInfo[roomid] = []string{}
-		}
-
-		// 检查用户是否已存在于房间，避免重复添加
-		userExists := false
-		for _, id := range wsinfo.RoomInfo[roomid] {
-			if id == useruuid {
-				userExists = true
-				break
+	debugData := make(map[string]*DebugGroupWebSocket)
+	for roomID, group := range clients {
+		debugGroup := &DebugGroupWebSocket{WsRoomInfo: make(map[string][]string)}
+		group.mu.Lock()
+		for userID, conns := range group.WsRoomInfo {
+			for _, conn := range conns {
+				// 用 conn 的内存地址表示 WebSocket 连接
+				debugGroup.WsRoomInfo[userID] = append(debugGroup.WsRoomInfo[userID], fmt.Sprintf("%p", conn))
 			}
 		}
-
-		if !userExists {
-			wsinfo.RoomInfo[roomid] = append(wsinfo.RoomInfo[roomid], useruuid) // 添加用户到房间
-			fmt.Printf("用户 %s 加入房间 %s\n", useruuid, roomid)
-		} else {
-			fmt.Printf("用户 %s 已在房间 %s 中\n", useruuid, roomid)
-		}
-		fmt.Println(wsinfo.RoomInfo[roomid])
-	} else if IsGroup == "0" {
-		channel = "user:" + roomid + ":" + useruuid // 设置为用户频道
-		wsinfo.UserID = useruuid
-
+		group.mu.Unlock()
+		debugData[roomID] = debugGroup
 	}
-	// 升级 HTTP 连接为 WebSocket 连接
-	conn, err := upgrader.Upgrade(w, r, nil)
+	return debugData
+}
+func PrintDebugClients() {
+	data, err := json.MarshalIndent(DebugClients(), "", "  ")
 	if err != nil {
-		fmt.Println(err)                               // 打印错误信息
-		http.Error(w, "无法升级连接", http.StatusBadRequest) // 返回错误响应
+		fmt.Println("JSON 序列化失败:", err)
 		return
 	}
-	defer conn.Close() // 函数退出时关闭连接
+	fmt.Println(string(data))
+}
 
-	wsinfo.WS = conn
-	mu.Lock() // 锁定以保护 clients
-	//clients[conn] = true // 将新连接加入到客户端列表
-	clients = append(clients, &wsinfo)
-	mu.Unlock() // 解锁
+// HandleWebSocket 处理 WebSocket 连接。
+// - 参数：
+//   - w: HTTP 响应写入器。
+//   - r: HTTP 请求。
+//   - db: 数据库连接实例。
+func HandleWebSocket(w http.ResponseWriter, r *http.Request, db *gorm.DB) {
+	// 从请求中获取用户和房间相关参数。
+	userID := r.URL.Query().Get("userIDUUID")
+	isGroup := r.URL.Query().Get("IsGroup")
+	roomID := r.URL.Query().Get("roomid")
 
-	pubsub := sqlconfig.SubscribeMessage(channel) // 订阅消息频道
-	defer pubsub.Close()                          // 函数退出时关闭订阅
+	// 参数验证。
+	if userID == "" || isGroup == "" || roomID == "" {
+		http.Error(w, "缺少必要的参数", http.StatusBadRequest)
+		return
+	}
 
-	// 启动一个 Goroutine 监听频道消息
-	go func() {
-		for {
-			msg, err := pubsub.ReceiveMessage(context.Background()) // 接收消息
-			if err != nil {
-				fmt.Println(err)
-				return // 出现错误则退出
-			}
-			sendToClients(msg.Payload, roomid, IsGroup) // 发送消息到该房间内的用户
-		}
-	}()
-	// 处理客户端发送的消息
+	// 升级 HTTP 连接到 WebSocket。
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		fmt.Println("WebSocket 升级失败:", err)
+		http.Error(w, "无法升级连接", http.StatusBadRequest)
+		return
+	}
+	defer conn.Close()
+
+	// 初始化或获取指定房间的 GroupWebSocket。
+	mu.Lock()
+	group, exists := clients[roomID]
+	if !exists {
+		group = &GroupWebSocket{WsRoomInfo: make(map[string][]*websocket.Conn)}
+		clients[roomID] = group
+	}
+	mu.Unlock()
+
+	// 将当前用户的连接加入房间。
+	group.mu.Lock()
+	group.WsRoomInfo[userID] = append(group.WsRoomInfo[userID], conn)
+	group.mu.Unlock()
+	PrintDebugClients()
+	// 确定 Redis 频道名称。
+	channel := ""
+	if isGroup == "1" {
+		channel = "group:" + userID + roomID
+	} else {
+		channel = "user:" + roomID + ":" + userID
+	}
+
+	// 订阅 Redis 消息频道。
+	pubsub := sqlconfig.SubscribeMessage(channel)
+	defer pubsub.Close()
+
+	// 启动协程监听 Redis 频道的消息。
+	go listenForMessages(pubsub, roomID)
+
+	// 处理来自客户端的 WebSocket 消息。
+	handleClientMessages(conn, db, channel, userID, roomID)
+
+}
+
+// listenForMessages 持续监听指定 Redis 频道的消息并广播到房间。
+// - 参数：
+//   - pubsub: Redis 订阅实例。
+//   - roomID: 房间 ID。
+func listenForMessages(pubsub *redis.PubSub, roomID string) {
 	for {
-		err := conn.ReadJSON(&message) // 读取客户端发送的 JSON 消息
+		msg, err := pubsub.ReceiveMessage(context.Background())
 		if err != nil {
-			fmt.Println(err) // 打印错误信息
-			mu.Lock()        // 锁定以保护 clients
-			// 从切片中删除关闭的客户端
-			for i, client := range clients {
-				if client.WS == conn {
-					clients = append(clients[:i], clients[i+1:]...)
-					break
-				}
-			}
-			mu.Unlock() // 解锁
-			return      // 退出循环
+			fmt.Println("订阅消息接收失败:", err)
+			return
+		}
+		sendToRoom(msg.Payload, roomID)
+	}
+}
+
+// handleClientMessages 处理来自 WebSocket 客户端的消息。
+// - 参数：
+//   - conn: 客户端的 WebSocket 连接。
+//   - db: 数据库实例。
+//   - channel: Redis 频道名称。
+//   - userID: 用户 ID。
+//   - roomID: 房间 ID。
+func handleClientMessages(conn *websocket.Conn, db *gorm.DB, channel, userID, roomID string) {
+	var message model.Message
+	for {
+		// 从客户端读取 JSON 格式的消息。
+		err := conn.ReadJSON(&message)
+		if err != nil {
+			fmt.Println("读取消息失败:", err)
+			removeClient(conn, roomID, userID)
+			return
 		}
 
+		// 重置消息 ID，确保插入新记录。
 		message.ID = 0
-		// 将消息保存到数据库
-		mu.Lock()
-		result := db.Create(&message)
-		mu.Unlock()
-		if result.Error != nil {
-			fmt.Println(result.Error) // 打印保存失败的错误信息
-			continue                  // 跳过当前循环
+		if err := db.Create(&message).Error; err != nil {
+			fmt.Println("消息保存失败:", err)
+			continue
 		}
-		// 发布消息到 Redis
+
+		// 将消息发布到 Redis 频道。
 		sqlconfig.PublishMessage(channel, message)
 	}
 }
 
-// sendToClients 将消息发送给所有连接的客户端
-func sendToClients(message string, roomID string, IsGroup string) {
-	fmt.Println("执行了n次")
-	mu.Lock() // 锁定以保护 clients
-	defer mu.Unlock()
-	if IsGroup == "0" {
-		// 解析房间内的用户
-		userIDs := ParseRoomID(roomID)
-		// 遍历 clients，仅向属于该房间的用户发送消息
-		for _, client := range clients {
-			for _, userID := range userIDs {
-				if client.UserID == userID { // 判断是否是房间内的用户
-					if err := client.WS.WriteMessage(websocket.TextMessage, []byte(message)); err != nil {
-						fmt.Printf("发送失败，关闭连接 (用户: %s): %v\n", client.UserID, err)
-						_ = client.WS.Close()
-						// 从切片中删除失效的客户端
-						for i, c := range clients {
-							if c.WS == client.WS {
-								clients = append(clients[:i], clients[i+1:]...)
-								break
-							}
-						}
-					}
-				}
-			}
-		}
-	} else {
-	loop:
-		for _, c := range clients {
-			for key, _ := range c.RoomInfo {
-				if key == roomID {
-					for _, c2 := range clients {
-						err := c2.WS.WriteMessage(websocket.TextMessage, []byte(message))
-						if err != nil {
-							fmt.Printf("发送失败，关闭连接 (用户: %s): %v\n", c2.UserID, err)
-							_ = c2.WS.Close()
-							// 从切片中删除失效的客户端
-							for i, c := range clients {
-								if c.WS == c2.WS {
-									clients = append(clients[:i], clients[i+1:]...)
-									break
-								}
-							}
-						}
-					}
-					break loop
-				}
+// sendToRoom 将消息广播到房间内的所有 WebSocket 连接。
+// - 参数：
+//   - message: 要发送的消息。
+//   - roomID: 房间 ID。
+func sendToRoom(message, roomID string) {
+	mu.Lock()
+	group, exists := clients[roomID]
+	mu.Unlock()
+	if !exists {
+		return
+	}
+
+	group.mu.Lock()
+	defer group.mu.Unlock()
+	for _, conns := range group.WsRoomInfo {
+		for _, conn := range conns {
+			if err := conn.WriteMessage(websocket.TextMessage, []byte(message)); err != nil {
+				fmt.Println("发送消息失败，关闭连接:", err)
+				_ = conn.Close()
 			}
 		}
 	}
-
 }
 
-func ParseRoomID(roomid string) []string {
-	return strings.Split(roomid, "_") // 根据 "_" 分割返回用户 ID 列表
+// removeClient 移除房间中指定用户的 WebSocket 连接。
+// - 参数：
+//   - conn: 要移除的连接。
+//   - roomID: 房间 ID。
+//   - userID: 用户 ID。
+func removeClient(conn *websocket.Conn, roomID, userID string) {
+	mu.Lock()
+	group, exists := clients[roomID]
+	mu.Unlock()
+	if !exists {
+		return
+	}
+
+	group.mu.Lock()
+	defer group.mu.Unlock()
+
+	// 移除指定用户的连接。
+	if conns, ok := group.WsRoomInfo[userID]; ok {
+		for i, c := range conns {
+			if c == conn {
+				group.WsRoomInfo[userID] = append(conns[:i], conns[i+1:]...)
+				break
+			}
+		}
+		if len(group.WsRoomInfo[userID]) == 0 {
+			delete(group.WsRoomInfo, userID)
+		}
+	}
+
+	// 如果房间中没有任何用户，删除房间。
+	if len(group.WsRoomInfo) == 0 {
+		mu.Lock()
+		delete(clients, roomID)
+		mu.Unlock()
+	}
 }

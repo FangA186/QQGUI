@@ -4,3 +4,4 @@ frontend/dist
 private.pem
 utils/routers
 app.go
+.idea

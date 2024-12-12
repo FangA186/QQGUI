@@ -2,7 +2,6 @@ package api
 
 import (
 	"QQGUI/model"
-	"fmt"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
@@ -41,6 +40,5 @@ func GetMessageListService(db *gorm.DB, rs *redis.Client) *MessageService {
 func (a *MessageService) GetGroupMessages(roomID string) []GroupMessageList {
 	var info []GroupMessageList
 	a.Db.Debug().Raw("SELECT  messages.*,ui.id,ui.avatar,ui.username,ui.uuid,ui.signature FROM `messages` left join user_infos ui on ui.id = messages.send_user_id where room_id = ?", roomID).Scan(&info)
-	fmt.Println(info)
 	return info
 }
