@@ -5,19 +5,25 @@
 
 ## About
 
-This is the official Wails Vue template.
+此项目通过wails+vue3+go(版本为1.23.2)
 
-You can configure the project by editing `wails.json`. More information about the project settings can be found
-here: https://wails.io/docs/reference/project-config
+## 后续任务清单
+1、已聊天的群组放到首页。并且可以进行删除，删除之后不能出现再首页，只有再一次聊天才会出现再首页
 
-## Live Development
+2、群组消息通知
 
-To run in live development mode, run `wails dev` in the project directory. This will run a Vite development
-server that will provide very fast hot reload of your frontend changes. If you want to develop in a browser
-and have access to your Go methods, there is also a dev server that runs on http://localhost:34115. Connect
-to this in your browser, and you can call your Go code from devtools.
+3、群组的权限管理。分为群主、管理员、成员
 
-## Building
+4、群公告
 
-To build a redistributable, production mode package, use `wails build`.
->>>>>>> d9925a1d530907824c42cdc9b0e000e7905e89cb
+5、朋友圈
+
+6、个人中心
+
+待完结......
+
+项目启动 wails dev
+
+数据库配置在config->sqlconfig->MySQL.go里面进行配置
+
+

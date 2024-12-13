@@ -11,4 +11,9 @@ type Message struct {
 	FileURL        string `json:"file_url" gorm:"default:''"` // 文件的URL或路径
 }
 
+type Messages1 struct {
+	Message
+	Avatar string
+}
+
 // 如果有文件上传那么给文件也单独创建一条信息。

@@ -22,7 +22,7 @@ func InitRedis() *redis.Client {
 }
 
 // PublishMessage 发布消息到 Redis
-func PublishMessage(channel string, message model.Message) {
+func PublishMessage(channel string, message model.Messages1) {
 	marshal, err := json.Marshal(message)
 	if err != nil {
 		return
@@ -44,7 +44,6 @@ func SubscribeMessage(channel string) *redis.PubSub {
 	//	pubsub = rdb.Subscribe(context.Background(), channel)
 	//})
 	//return pubsub
-	fmt.Println(channel)
 	pubsub := rdb.Subscribe(context.Background(), channel) // 订阅指定频道
 	return pubsub                                          // 返回 PubSub 实例
 }
