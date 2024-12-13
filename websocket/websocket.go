@@ -13,6 +13,10 @@ import (
 	"sync"
 )
 
+/* 整个流程 HandleWebSocket(创建连接) -> handleClientMessages(从客户端读取消息，如果读取到了就直接广播到redis)
+-> listenForMessages(监听到了有消息发不到了redis就通过sendToRoom) -> sendToRoom(发送到客户端)
+*/
+
 // GroupWebSocket 结构体，用于存储特定房间的 WebSocket 连接信息。
 // - WsRoomInfo: 存储房间中每个用户的 WebSocket 连接列表。
 // - mu: 确保对 WsRoomInfo 的并发访问是安全的。
@@ -20,6 +24,7 @@ type GroupWebSocket struct {
 	WsRoomInfo map[string][]*websocket.Conn // 用户ID与其对应WebSocket连接的映射。
 	mu         sync.Mutex                   // 保护 WsRoomInfo 的互斥锁。
 }
+
 type DebugGroupWebSocket struct {
 	WsRoomInfo map[string][]string `json:"WsRoomInfo"`
 }
@@ -149,8 +154,9 @@ func listenForMessages(pubsub *redis.PubSub, roomID string) {
 //   - channel: Redis 频道名称。
 //   - userID: 用户 ID。
 //   - roomID: 房间 ID。
+
 func handleClientMessages(conn *websocket.Conn, db *gorm.DB, channel, userID, roomID string) {
-	var message model.Message
+	var message model.Messages1
 	for {
 		// 从客户端读取 JSON 格式的消息。
 		err := conn.ReadJSON(&message)
@@ -162,7 +168,7 @@ func handleClientMessages(conn *websocket.Conn, db *gorm.DB, channel, userID, ro
 
 		// 重置消息 ID，确保插入新记录。
 		message.ID = 0
-		if err := db.Create(&message).Error; err != nil {
+		if err := db.Create(&message.Message).Error; err != nil {
 			fmt.Println("消息保存失败:", err)
 			continue
 		}
@@ -175,7 +181,8 @@ func handleClientMessages(conn *websocket.Conn, db *gorm.DB, channel, userID, ro
 // sendToRoom 将消息广播到房间内的所有 WebSocket 连接。
 // - 参数：
 //   - message: 要发送的消息。
-//   - roomID: 房间 ID。
+//   - roomID: 房间
+//     .3+0ID。
 func sendToRoom(message, roomID string) {
 	mu.Lock()
 	group, exists := clients[roomID]

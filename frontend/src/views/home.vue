@@ -68,9 +68,10 @@ const GenerateRoomID = (uuid1, uuid2) => {
   }
   return uuid2 + "_" + uuid1
 }
-const sendMessage = async () => {
+const sendMessage = async (event) => {
+  event.preventDefault()
   if (GroupOrUser.value === false) {
-    console.log(112233)
+    console.log(localStorage.getItem("avatar"))
     await Receive(localStorage.getItem("userID"),
         JSON.stringify(oneinfo.value.friend_id),
         oneinfo.value.applicant_avatar,
@@ -78,6 +79,7 @@ const sendMessage = async () => {
     )
     sockets[UserRoomID.value].send(JSON.stringify({
       two: 2,
+      Avatar:localStorage.getItem("avatar"),
       content: content.value,
       send_user_id: parseInt(localStorage.getItem("userID")),
       receiver_user_id: oneinfo.value.friend_id,
@@ -279,13 +281,12 @@ const group = async (item) => {
   // 将新连接保存在 sockets 对象中，按 roomid 管理
   groupSockets[item.roomID] = groupSocket;
   groupSocket.onopen = async function () {
-    console.log(groupSocket)
     messageList.value = await GetGroupMessageList(item.roomID)
     scrollToBottom()
   };
 
   groupSocket.onmessage = function (event) {
-    // messageList.value.push(JSON.parse(event.data))
+    messageList.value.push(JSON.parse(event.data))
     console.log(JSON.parse(event.data))
     scrollToBottom()
   };
@@ -383,27 +384,21 @@ const group = async (item) => {
         <ul class="list">
           <li :class="[userID===item.send_user_id?'right':'left']" v-for="(item,index) in messageList" :key="item.ID">
             <div v-if="userID===item.send_user_id" class="d">
-              <div style="background-color: #95ec69" class="c">{{ item.content }}
-                <svg class="icon sj" aria-hidden="true" font-size="0.8vw" color="#95ec69"
-                     style="transform: rotate(90deg);margin-top: 1vh;position: absolute;margin-left: 0.3vw">
-                  <use xlink:href="#icon-sanjiaoxing1"></use>
-                </svg>
+              <div class="c">
+                <span style="text-align: left">{{ item.content }}</span>
               </div>
-
-              <!--              <img :src="userID===item.send_user_id?avatar:oneinfo.friend_avatar" alt=""-->
-              <!--                   style="margin-left: 1vw;margin-right: 1vw">-->
               <img :src="item.Avatar" alt=""
-                   style="margin-left: 1vw;margin-right: 1vw">
+                   style="margin-left: 0.5vw">
             </div>
             <div v-else class="d">
               <!--              <img :src="userID===item.send_user_id?avatar:oneinfo.friend_avatar" alt=""-->
               <!--                   style="margin-left: 0.5vw;margin-right: 1vw">-->
               <img :src="item.Avatar" alt=""
-                   style="margin-left: 1vw;margin-right: 1vw">
-              <div style="background-color: #ffffff" class="c">{{ item.content }}
-                <div class="x">
-
-                </div>
+                   style="margin-right: 0.5vw">
+              <div  class="c1">
+                <span>
+                  {{ item.content }}
+                </span>
               </div>
             </div>
           </li>
@@ -419,7 +414,7 @@ const group = async (item) => {
           <svg class="icon wj" aria-hidden="true" style="cursor: pointer" font-size="0.8vw" @click="choiceFile">
             <use xlink:href="#icon-wenjian"></use>
           </svg>
-          <textarea id="story" name="story" rows="5" cols="33" v-model="content"></textarea>
+          <textarea id="story" name="story" rows="5" cols="33" v-model="content" maxlength="1000" @keydown.enter="sendMessage($event)"></textarea>
           <button @click="sendMessage">发送(enter)</button>
         </div>
       </div>
@@ -485,7 +480,8 @@ const group = async (item) => {
   li {
     padding: 0.3vw;
     border-bottom: 1px solid black;
-
+    //background-color: #409eff;
+    transition: all 0.3s ease;
     .image-container {
       width: 100%;
       display: flex;
@@ -524,20 +520,16 @@ const group = async (item) => {
         text-overflow: ellipsis;
       }
     }
-
-    .image-container:hover {
-      background-color: #72767b;
-      transition: all 0.5s;
-    }
-
-
+  }
+  li:hover{
+    opacity: 0.8;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
   }
 }
 
 .searchList {
   height: 95vh;
   background-color: #d9d8d8;
-
   li:hover {
     opacity: 0.7;
     background-color: #72767b;
@@ -565,19 +557,20 @@ const group = async (item) => {
     .left {
       list-style: none;
       text-align: left;
-      height: 5vh;
       display: flex;
       align-items: center;
+      //background-color: black;
+      margin-bottom: 0.5vw;
     }
 
     .right {
       list-style: none;
       text-align: right;
-      height: 5vh;
       display: flex;
       justify-content: flex-end;
       align-items: center;
-
+      //background-color: #72767b;
+      margin-bottom: 0.5vw;
     }
 
     img {
@@ -586,20 +579,50 @@ const group = async (item) => {
     }
 
     .d {
-      margin-left: 0.5vw;
+      //margin-left: 0.5vw;
       color: black;
       display: flex;
-      position: relative;
-
-      .c {
-        padding-left: 1vh;
-        padding-right: 1vh;
-        height: 4vh;
-        line-height: 4vh;
+      //position: relative;
+      .c,.c1 {
+        padding: 0 1vh; /* 水平方向的内边距 */
         border-radius: 0.3vw;
-        position: relative;
+        display: inline-block; /* 使得c元素可以自适应内容 */
+
+        span {
+          word-wrap: break-word;
+          word-break: break-all;
+          height: auto; /* 让高度自动适应内容 */
+          line-height: 4vh;
+          display: inline-block;
+          white-space: break-spaces; /* 允许换行 */
+          max-width: 35vw; /* 设置最大宽度，根据需要调整 */
+          font-family: 华文新魏,serif;
+        }
+
+
       }
+      .c {
+        background-color: #95ec69;
+        transition: all 0.3s ease; /* 添加过渡效果 */
+      }
+
+      .c1 {
+        background-color: #ffffff;
+        transition: all 0.3s ease;
+      }
+
+      .c1:hover {
+        opacity: 0.8;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); /* 叠加模糊阴影效果 */
+      }
+
+      .c:hover {
+        opacity: 0.8;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.2); /* 叠加模糊阴影效果 */
+      }
+
     }
+
   }
 
   .di {
