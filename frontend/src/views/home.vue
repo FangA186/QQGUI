@@ -260,6 +260,7 @@ const dialogue = async (item) => {
 };
 
 const group = async (item) => {
+  console.log(item)
   GroupRoomID.value = item.roomID
   GroupOrUser.value = true
   oneinfo.value = item
@@ -299,6 +300,14 @@ const group = async (item) => {
   groupSocket.onerror = function (error) {
     console.error("WebSocket 错误:", error);
   };
+}
+// import  DrawerProps  from 'element-plus'
+// const direction = ref<DrawerProps['direction']>('rtl')
+const detailShow = ref(false)
+const detail = ()=>{
+  console.log("点击了?",detailShow.value)
+    detailShow.value = !detailShow.value
+
 }
 </script>
 
@@ -380,7 +389,19 @@ const group = async (item) => {
     </template>
     <template #three>
       <div class="dialogueList">
-        <h2>{{ oneinfo.friend_username }}</h2>
+        <h2>{{ oneinfo.friend_username }}
+<!--          <svg class="icon wj" aria-hidden="true" font-size="0.8vw" @click="choiceFile">-->
+<!--            <use xlink:href="#icon-sanjiaoxing-copy"></use>-->
+<!--          </svg>-->
+
+          <el-button type="primary" @click="detail" style="position: absolute;right: 1vw">
+            <svg class="icon wj" aria-hidden="true" style="cursor: pointer;" font-size="1.5vw">
+              <use xlink:href="#icon-xiangzuosanjiaoxing"></use>
+            </svg>
+          </el-button>
+
+        </h2>
+
         <ul class="list">
           <li :class="[userID===item.send_user_id?'right':'left']" v-for="(item,index) in messageList" :key="item.ID">
             <div v-if="userID===item.send_user_id" class="d">
@@ -418,6 +439,25 @@ const group = async (item) => {
           <button @click="sendMessage">发送(enter)</button>
         </div>
       </div>
+        <el-drawer v-model="detailShow">
+          <template #default>
+              <div class="groupInfo">
+                <div class="info" v-for="(item,index) in oneinfo.userInfo">
+                  <img :src="item.avatar" :alt="item.userName">
+                  <span style="color: black">
+                    {{item.userName}}
+                  </span>
+                </div>
+
+              </div>
+          </template>
+          <template #footer>
+            <div style="flex: auto">
+              <el-button @click="detailShow = false">cancel</el-button>
+              <el-button type="primary" @click="detailShow= false">confirm</el-button>
+            </div>
+          </template>
+        </el-drawer>
     </template>
   </Index>
 </template>
@@ -545,6 +585,7 @@ const group = async (item) => {
     height: 4.6vh;
     line-height: 4.6vh;
     color: black;
+    position: relative;
     border-bottom: 1px solid black;
   }
 
@@ -678,4 +719,41 @@ const group = async (item) => {
   }
 
 }
+
+  .groupInfo{
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.18); /* 叠加模糊阴影效果 */
+    //background-color: yellow;
+    display: grid;
+    grid-template-columns: 4vw 4vw 4vw;
+    border-radius: 0.5vw;
+    grid-template-rows: 4vw 4vw 4vw;
+    width: 20vw;
+    padding: 1vw;
+    margin: 0 auto;
+    .info{
+      display: flex;
+      flex-direction: column;
+      //background-color: yellow;
+      align-items: center;
+      span{
+        width: 3vw;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+      img{
+        width: 3vw;
+        height: 5.5vh;
+        border-radius: 0.5vw;
+        cursor: pointer;
+        transition: all 0.3s ease-in-out; /* 添加过渡效果 */
+      }
+      img:hover{
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.7); /* 叠加模糊阴影效果 */
+        transition: all 0.3s ease; /* 添加过渡效果 */
+      }
+    }
+
+  }
+
 </style>
