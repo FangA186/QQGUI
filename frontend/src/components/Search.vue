@@ -39,6 +39,7 @@ const addFriend = async ()=>{
 }
 const qiehuan = ()=>{
   showGroup.value = !showGroup.value
+  // console.log(showGroup.value)
   emit('clear',{message1:showGroup.value})
   // if (showGroup.value){
   //   emit('clear',{message:false})
@@ -49,15 +50,15 @@ const qiehuan = ()=>{
 </script>
 <template>
   <div class="search">
-    <input type="text" maxlength="50" placeholder="搜索" style="box-shadow: 0 0 0.1vh white" @keyup.enter="search" v-model="username" @click="clear1"/>
-    <svg class="icon iconsearch" aria-hidden="true" font-size="15">
-      <use xlink:href="#icon-sanjiaoxing"></use>
-    </svg>
+    <input type="text" maxlength="50" placeholder="搜索" style="box-shadow: 0 0 0.1vh white;width: 150px;" @keyup.enter="search" v-model="username" @click="clear1"/>
+<!--    <svg class="icon iconsearch" aria-hidden="true">-->
+<!--      <use xlink:href="#icon-sanjiaoxing"></use>-->
+<!--    </svg>-->
 
     <div class="action-icon-container">
       <slot name="action-icon"></slot>
     </div>
-    <svg class="icon iconqiehuan" aria-hidden="true" font-size="18" @click="qiehuan">
+    <svg class="icon iconqiehuan" aria-hidden="true" @click="qiehuan">
       <use xlink:href="#icon-sanjiaoxing-copy"></use>
     </svg>
     <ul v-if="showul" class="searchList">
@@ -66,7 +67,7 @@ const qiehuan = ()=>{
         <span>{{ item.Username }}</span>
       </li>
     </ul>
-    <svg class="icon iconclear" aria-hidden="true" font-size="25" @click="clear" v-if="clearIcon">
+    <svg class="icon iconclear" aria-hidden="true" @click="clear" v-if="clearIcon">
       <use xlink:href="#icon-cuowu1"></use>
     </svg>
     <el-dialog
@@ -99,38 +100,47 @@ const qiehuan = ()=>{
 <style scoped lang="less">
 .search {
   position: relative;
-  height: 5vh;
-  background-color: #f7f7f7;
-  .iconsearch {
+  height: 40px;
+  //background-color: #f7ba2a;
+  width: 200px;
+  //.iconsearch {
+  //  position: absolute;
+  //  left: 1px;
+  //  top: 16px;
+  //  width: 14px;  // 固定大小
+  //  height: 14px; // 固定大小
+  //}
+
+  .iconqiehuan {
     position: absolute;
-    left: 1.3vw;
-    top: 1.6vh;
-  }
-  .iconqiehuan{
-    position: absolute;
-    right: 0.5vw;
-    top: 1.6vh;
+    right:-1px;
+    top: 13px;
+    width: 16px;  // 固定大小
+    height: 16px; // 固定大小
   }
 
   input {
     position: absolute;
     border: none;
     outline: none;
-    text-indent: 1.3vw;
-    height: 3vh;
-    width: 13vw;
-    left: 1vw;
-    top: 1vh;
-    line-height: 3vh;
-    background-color: #e2e2e2;
-    border-radius: 0.5vh;
+    text-indent: 3px;
+    height: 20px;
+    width: 100px;
+    left: 5px;
+    top: 10px;
+    line-height: 20px;
+    opacity: 0.5;
+    border-radius: 5px;
+    font-size: 14px; // 固定字体大小
   }
 
   .action-icon-container {
     position: absolute;
-    right:2vw;
-    top: 1.1vh;
+    right: 25px;
+    top: 10px;
     cursor: pointer;
+    width: 14px;  // 固定大小
+    height: 14px; // 固定大小
   }
 
   .searchList {
@@ -151,7 +161,8 @@ const qiehuan = ()=>{
       border-radius: 1vh;
 
       img {
-        width: 13%;
+        width: 40px;  // 固定宽度
+        height: 40px; // 固定高度
         border-radius: 1vh;
         position: absolute;
         top: 50%;
@@ -164,46 +175,56 @@ const qiehuan = ()=>{
         top: 50%;
         left: 15%;
         transform: translateY(-50%);
+        font-size: 16px; // 固定字体大小
       }
     }
-
   }
 
   .iconclear {
     position: absolute;
-    right: 4vw;
-    top: 1.1vh;
+    right: 42px;
+    top: 10px;
     cursor: pointer;
+    width: 24px;  // 固定大小
+    height: 24px; // 固定大小
   }
-  .dialog-footer{
+
+  .dialog-footer {
     color: black;
-      .header{
-        text-align: left;
-        position: relative;
-        height: 6.5vh;
-        padding: 0.5vw 0.5vw 0 0.5vw;
-        img{
-          width: 3vw;
-          position: absolute;
-          top: 50%;
-          left: 3%;
-          transform: translateY(-50%);
-        }
-        span{
-          font-size: 1vw;
-        }
-        span{
-          position: absolute;
-          top: 50%;
-          left: 20%;
-          transform: translateY(-50%);
-        }
+
+    .header {
+      text-align: left;
+      position: relative;
+      height: 6.5vh;
+      padding: 0.5vw 0.5vw 0 0.5vw;
+
+      img {
+        width: 3vw;  // 固定宽度
+        height: 3vw; // 固定高度
+        position: absolute;
+        top: 50%;
+        left: 3%;
+        transform: translateY(-50%);
       }
-    .Signature{
+
+      span {
+        font-size: 1vw; // 固定字体大小
+      }
+
+      span {
+        position: absolute;
+        top: 50%;
+        left: 20%;
+        transform: translateY(-50%);
+      }
+    }
+
+    .Signature {
       text-align: left;
       text-indent: 0.6vw;
       font-size: 0.8vw;
     }
   }
 }
+
 </style>

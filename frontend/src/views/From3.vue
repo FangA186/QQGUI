@@ -112,7 +112,7 @@ const onLoginClick = async (num) => {
   //background:linear-gradient(220.55deg, #00E0EE 0%, #AD00FE 100%);
   background:linear-gradient(20.55deg, #91727a 0%, #4b62a8  50%);
   border-radius: 1vh;
-  opacity: 0.84;
+  opacity: 0.6;
   //margin-left: 1vw;
   margin:auto;
   left:0;

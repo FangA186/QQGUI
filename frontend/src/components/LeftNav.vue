@@ -5,6 +5,9 @@ const router = useRouter()
 
 <template>
   <ul class="navigation_list">
+    <li>
+     <slot name="img1"></slot>
+    </li>
     <li @click="router.push('/Index')">
       <svg class="icon" aria-hidden="true" font-size="30">
         <use xlink:href="#icon-xinxi"></use>
@@ -26,7 +29,8 @@ const router = useRouter()
 <style scoped lang="less">
 .navigation_list {
   padding: 0;
-
+  //width: 100%;
+  //background-color: #67c23a;
   li {
     list-style: none;
     text-align: center;

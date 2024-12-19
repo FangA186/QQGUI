@@ -4,7 +4,6 @@ import b from './assets/images/appicon.png'
 import {ref} from "vue";
 import {useRoute} from "vue-router";
 import {useRouter} from "vue-router";
-import V3Emoji from "vue3-emoji";
 const backgroundImage = ref(a);
 const route = useRoute();
 const router = useRouter()
@@ -18,16 +17,7 @@ const changeBackgroundImage = (num) => {
 
 <template>
 
-  <div id="logo" :style="{ backgroundImage: `url(${backgroundImage})` }">
-    <RouterView v-slot="{ Component, route }" @changeBackground="changeBackgroundImage">
-      <transition name="j" mode="out-in">
-        <component :is="Component" :key="route.path">
-        </component>
-      </transition>
-    </RouterView>
-  </div>
-
-<!--  <div id="logo">-->
+<!--  <div id="logo" :style="{ backgroundImage: `url(${backgroundImage})` }">-->
 <!--    <RouterView v-slot="{ Component, route }" @changeBackground="changeBackgroundImage">-->
 <!--      <transition name="j" mode="out-in">-->
 <!--        <component :is="Component" :key="route.path">-->
@@ -35,6 +25,15 @@ const changeBackgroundImage = (num) => {
 <!--      </transition>-->
 <!--    </RouterView>-->
 <!--  </div>-->
+
+  <div id="logo">
+    <RouterView v-slot="{ Component, route }" @changeBackground="changeBackgroundImage">
+      <transition name="j" mode="out-in">
+        <component :is="Component" :key="route.path">
+        </component>
+      </transition>
+    </RouterView>
+  </div>
 </template>
 
 <style>
@@ -46,6 +45,7 @@ const changeBackgroundImage = (num) => {
   background-origin: content-box;
   display: flex;
   align-items: center;
-  background:linear-gradient(220.55deg, #565656 0%, #181818 100%);
+  //background-color: #409eff;
+  //background:linear-gradient(220.55deg, #565656 0%, #181818 100%);
 }
 </style>

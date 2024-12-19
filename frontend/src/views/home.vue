@@ -13,7 +13,7 @@ import {
   QueryRoom,
   Receive
 } from "../../wailsjs/go/api/MyApp.js"
-import {useMessageStore} from '../store/messages.js'; // 根据你的文件结构调整路径
+import {useMessageStore} from '../store/messages.js';
 const messageStore = useMessageStore();
 const consentList = ref([])
 const dialogVisible = ref(false)
@@ -23,7 +23,6 @@ const speakList = ref([])
 const oneinfo = ref([])
 const show = ref(false)
 const content = ref("")
-let socket
 let groupSocket
 let groupSockets = {}
 let sockets = {};  // 用来存储不同房间或对话的 WebSocket 连接
@@ -71,7 +70,6 @@ const GenerateRoomID = (uuid1, uuid2) => {
 const sendMessage = async (event) => {
   event.preventDefault()
   if (GroupOrUser.value === false) {
-    console.log(localStorage.getItem("avatar"))
     await Receive(localStorage.getItem("userID"),
         JSON.stringify(oneinfo.value.friend_id),
         oneinfo.value.applicant_avatar,
@@ -79,7 +77,7 @@ const sendMessage = async (event) => {
     )
     sockets[UserRoomID.value].send(JSON.stringify({
       two: 2,
-      Avatar:localStorage.getItem("avatar"),
+      Avatar: localStorage.getItem("avatar"),
       content: content.value,
       send_user_id: parseInt(localStorage.getItem("userID")),
       receiver_user_id: oneinfo.value.friend_id,
@@ -89,8 +87,8 @@ const sendMessage = async (event) => {
   } else {
     groupSockets[GroupRoomID.value].send(JSON.stringify({
       two: 2,
-      Avatar:localStorage.getItem("avatar"),
-      Username:oneinfo.value.applicant_username,
+      Avatar: localStorage.getItem("avatar"),
+      Username: oneinfo.value.applicant_username,
       content: content.value,
       send_user_id: parseInt(localStorage.getItem("userID")),
       receiver_user_id: 0,
@@ -194,18 +192,18 @@ const imgG = (info) => {
 const img3 = (info) => {
   if (info.length === 2) {
     return {
-      width: "1.2vw",
-      height: "2.4vh"
+      width: "24px",
+      height: "24px"
     }
   } else if (info.length === 3) {
     return {
-      width: "1.2vw",
-      height: "2.4vh"
+      width: "24px",
+      height: "24px"
     }
   } else {
     return {
-      width: "0.8vw",
-      height: "1.6vh"
+      width: "14px",
+      height: "14px"
     }
   }
 }
@@ -304,10 +302,18 @@ const group = async (item) => {
 // import  DrawerProps  from 'element-plus'
 // const direction = ref<DrawerProps['direction']>('rtl')
 const detailShow = ref(false)
-const detail = ()=>{
-  console.log("点击了?",detailShow.value)
-    detailShow.value = !detailShow.value
+const detail = () => {
+  console.log("点击了?", detailShow.value)
+  detailShow.value = !detailShow.value
 
+}
+const selectedUser = ref(null); // 当前选中的用户信息
+const userInfo = (item) => {
+  // 设置选中的用户信息
+  selectedUser.value = item;
+}
+const navtoSend = ()=>{
+  console.log(selectedUser.value)
 }
 </script>
 
@@ -332,39 +338,43 @@ const detail = ()=>{
           <div class="dialog-footer">
             <ul class="searchList1">
               <li v-for="(item,index) in consentList" style="display: block" v-if="twoli===true">
-                <img :src="item.applicant_avatar" alt="">
-                <span style="text-indent: 0.5vw">{{ item.applicant_username }}
-              </span>
                 <div v-if="item.IsConsent===0">
-                  <button style="width: 3vw" @click="consent(item)">
+                  <img :src="item.applicant_avatar" alt="">
+                  <span style="text-indent: 0.5vw">{{ item.applicant_username }}
+                  <button style="width: 90px" @click="consent(item)">
                     同意
                   </button>
-                  <button style="position: absolute;right: 0;top: 50%;left: 50%;transform: translateY(-50%);width: 3vw"
-                          @click="refuse(item)">
+                    <button style="position: absolute;right: 0;top: 50%;left: 50%;transform: translateY(-50%);width: 90px"
+                            @click="refuse(item)">
                     拒绝
                   </button>
+                  </span>
+
                 </div>
                 <div v-else-if="item.IsConsent===1">
-                  <button style="width: 3.5vw" disabled>已同意</button>
+                  <img :src="item.applicant_avatar" alt="">
+                  <span style="text-indent: 0.5vw;display: block;width: 100px;">{{ item.applicant_username }}</span>
+                  <button style="width: 90px" disabled>已同意</button>
                 </div>
                 <div v-else>
-                  <button style="width: 3.5vw" disabled>已拒绝</button>
+                  <img :src="item.applicant_avatar" alt="">
+                  <span style="text-indent: 0.5vw;display: block;width: 100px">{{ item.applicant_username }}></span>
+                  <button style="width: 90px" disabled>已拒绝</button>
                 </div>
               </li>
-              <li v-for="(item,index) in ApplicationRecord" style="display: block" v-else>
+              <li v-for="(item,index) in ApplicationRecord" style="display: flex" v-else>
                 <img :src="item.friend_avatar" alt="">
-                <span style="text-indent: 0.5vw">{{ item.friend_username }}
-              </span>
+                <span style="text-indent: 0.5vw;display: block;width: 100px">{{ item.friend_username }}</span>
                 <div v-if="item.IsConsent===0">
                   <button style="width: 5vw;" disabled>
                     已发送验证
                   </button>
                 </div>
                 <div v-else-if="item.IsConsent===1">
-                  <button style="width: 5vw" disabled>已同意</button>
+                  <button style="width: 90px" disabled>已同意</button>
                 </div>
                 <div v-else>
-                  <button style="width: 5vw" disabled>已拒绝</button>
+                  <button style="width: 90px" disabled>已拒绝</button>
                 </div>
               </li>
             </ul>
@@ -390,11 +400,7 @@ const detail = ()=>{
     <template #three>
       <div class="dialogueList">
         <h2>{{ oneinfo.friend_username }}
-<!--          <svg class="icon wj" aria-hidden="true" font-size="0.8vw" @click="choiceFile">-->
-<!--            <use xlink:href="#icon-sanjiaoxing-copy"></use>-->
-<!--          </svg>-->
-
-          <el-button type="primary" @click="detail" style="position: absolute;right: 1vw">
+          <el-button type="info"  @click="detail" style="position: absolute;right: 15px;top: 12px">
             <svg class="icon wj" aria-hidden="true" style="cursor: pointer;" font-size="1.5vw">
               <use xlink:href="#icon-xiangzuosanjiaoxing"></use>
             </svg>
@@ -403,20 +409,18 @@ const detail = ()=>{
         </h2>
 
         <ul class="list">
-          <li :class="[userID===item.send_user_id?'right':'left']" v-for="(item,index) in messageList" :key="item.ID">
+          <li :class="[userID===item.send_user_id?'right':'left']" v-for="(item,index) in messageList" :key="item.ID" style="padding: 0.5vw">
             <div v-if="userID===item.send_user_id" class="d">
               <div class="c">
-                <span style="text-align: left">{{ item.content }}</span>
+                <span style="text-align: left;">{{ item.content }}</span>
               </div>
               <img :src="item.Avatar" alt=""
                    style="margin-left: 0.5vw">
             </div>
             <div v-else class="d">
-              <!--              <img :src="userID===item.send_user_id?avatar:oneinfo.friend_avatar" alt=""-->
-              <!--                   style="margin-left: 0.5vw;margin-right: 1vw">-->
               <img :src="item.Avatar" alt=""
                    style="margin-right: 0.5vw">
-              <div  class="c1">
+              <div class="c1">
                 <span>
                   {{ item.content }}
                 </span>
@@ -432,118 +436,161 @@ const detail = ()=>{
               style="display: none;"
               @change="handleFileChange"
           />
-          <svg class="icon wj" aria-hidden="true" style="cursor: pointer" font-size="0.8vw" @click="choiceFile">
-            <use xlink:href="#icon-wenjian"></use>
-          </svg>
-          <textarea id="story" name="story" rows="5" cols="33" v-model="content" maxlength="1000" @keydown.enter="sendMessage($event)"></textarea>
+          <textarea id="story" name="story" rows="5" cols="33" v-model="content" maxlength="1000"
+                    @keydown.enter="sendMessage($event)">
+
+
+          </textarea>
           <button @click="sendMessage">发送(enter)</button>
         </div>
       </div>
-        <el-drawer v-model="detailShow">
-          <template #default>
-              <div class="groupInfo">
-                <div class="info" v-for="(item,index) in oneinfo.userInfo">
-                  <img :src="item.avatar" :alt="item.userName">
-                  <span style="color: black">
-                    {{item.userName}}
+      <el-drawer v-model="detailShow">
+        <template #default>
+          <div class="groupInfo">
+            <div class="info" v-for="(item,index) in oneinfo.userInfo" @click="userInfo(item,$event)">
+              <img :src="item.avatar" :alt="item.userName">
+              <span style="color: black">
+                    {{ item.userName }}
                   </span>
-                </div>
-
-              </div>
-          </template>
-          <template #footer>
-            <div style="flex: auto">
-              <el-button @click="detailShow = false">cancel</el-button>
-              <el-button type="primary" @click="detailShow= false">confirm</el-button>
             </div>
-          </template>
-        </el-drawer>
+            <div v-if="selectedUser" class="user-info-popup">
+              <div class="showInfo">
+                <img :src="selectedUser.avatar" alt="">
+                <p><strong>{{ selectedUser.userName }}</strong></p>
+              </div>
+              <div class="other">
+                <p>备注</p>
+                <p>共同群聊</p>
+                <p>个性签名</p>
+              </div>
+              <div class="func">
+                <div class="sendMessage" @click="navtoSend">
+                  <svg class="icon wj" aria-hidden="true" style="cursor: pointer" font-size="1.5vw" @click="choiceFile">
+                    <use xlink:href="#icon-fasong2"></use>
+                  </svg>
+                  <p><strong>发消息</strong></p>
+                </div>
+                <div class="voice">
+                  <svg class="icon wj" aria-hidden="true" style="cursor: pointer" font-size="1.5vw" @click="choiceFile">
+                    <use xlink:href="#icon-dianhua"></use>
+                  </svg>
+                  <p><strong>语音聊天</strong></p>
+                </div>
+                <div class="video">
+                  <svg class="icon wj" aria-hidden="true"  style="cursor: pointer" font-size="1.5vw" @click="choiceFile">
+                    <use xlink:href="#icon-shipin1"></use>
+                  </svg>
+                  <p><strong>视频聊天</strong></p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+        <template #footer>
+          <div style="flex: auto">
+            <el-button @click="detailShow = false">cancel</el-button>
+            <el-button type="primary" @click="detailShow= false">confirm</el-button>
+          </div>
+        </template>
+      </el-drawer>
     </template>
   </Index>
 </template>
 
 <style scoped lang="less">
-.searchList, .searchList1 {
+
+.searchList {
   width: 100%;
   padding: 0;
   margin: 0;
-
+  //height: 200px;
   li {
+    //width: 120px;
     text-align: left;
     list-style: none;
     padding: 0.5vh;
-    position: relative;
-    height: 5vh;
-    line-height: 5vh;
+    height: 40px;
+    line-height:40px;
     color: black;
-
-    div {
-      width: 15vh;
-      height: 5vh;
-      position: absolute;
-      right: 0
-    }
-
+    display: flex;
+    align-items: center; // 垂直居中
     img {
-      width: 13%;
+      width: 30px;   // 固定宽度
+      height: 30px;  // 固定高度
       border-radius: 0.5vh;
-      position: absolute;
-      top: 50%;
-      height: 4vh;
-      image-rendering: -moz-crisp-edges; /* Firefox */
-      image-rendering: -o-crisp-edges; /* Opera */
-      image-rendering: crisp-edges;
-      -ms-interpolation-mode: nearest-neighbor; /* IE (non-standard property) */
-      transform: translateY(-50%);
     }
-
     span {
       color: black;
-      position: absolute;
-      top: 50%;
-      left: 15%;
-      transform: translateY(-50%);
+      text-align: left;
     }
   }
-
-
+}
+.searchList1{
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  li {
+  //width: 120px;
+    text-align: left;
+    list-style: none;
+    padding: 0.5vh;
+    color: black;
+    div{
+      display: flex;
+      button{
+        border: none;
+        background-color: #72767b;
+        border-radius: 5px;
+        color: black;
+      }
+    }
+    img {
+      width: 30px;   // 固定宽度
+      height: 30px;  // 固定高度
+      border-radius: 0.5vh;
+    }
+    span {
+      color: black;
+      text-align: left;
+    }
+  }
 }
 
 .group {
   padding: 0;
   list-style: none;
-  width: 100%;
-  height: 93vh;
-  background-color: #eae7e7;
+  width: 200px;
+  margin: 0;
+  //height: 92vh;
   overflow-y: auto;
-
   li {
-    padding: 0.3vw;
-    border-bottom: 1px solid black;
+    //border-bottom: 1px solid black;
+  //background-color: #409eff; transition: all 0.3s ease;
+    height: 55px;
     //background-color: #409eff;
-    transition: all 0.3s ease;
     .image-container {
       width: 100%;
       display: flex;
-      background-color: #eae7e7;
-      height: 6vh;
+      //background-color: #eae7e7;
+      //height:40px;
       transition: all 0.5s;
-
       .im {
         display: flex;
         flex-wrap: wrap; /* 允许换行 */
-        width: 3.5vw;
-        padding: 0.5vh;
-
+        width: 55px;
+        height: 55px;
+        //background-color: #409eff;
+        //padding: 3px;
         .image-item {
           display: flex;
           flex-wrap: wrap;
           justify-content: space-around;
-          align-items: center;
-          gap: 0.5vw;
-         padding: 0.1vh;
+          //align-items: center;
+          gap: 5px;
+          padding: 1px;
 
           img {
+            border-radius: 5px;
             object-fit: fill /* 保持长宽比，并填充区域 */
           }
         }
@@ -553,55 +600,61 @@ const detail = ()=>{
       .s {
         width: 70%;
         color: black;
-        text-align: right;
-        padding-right: 3vh;
+        text-align: left;
+        text-indent: 5px;
+        padding-right:10px;
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
       }
     }
   }
-  li:hover{
+
+  li:hover {
     opacity: 0.8;
-    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    //box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
   }
 }
 
 .searchList {
-  height: 95vh;
-  background-color: #d9d8d8;
+  //height: 95vh;
+  //background-color: #d9d8d8;
+
   li:hover {
     opacity: 0.7;
-    background-color: #72767b;
+    //background-color: #72767b;
   }
 }
 
 .dialogueList {
   height: 100vh;
-
+  display: flex;
+  flex-direction: column;
+  position: relative;
   h2 {
     text-align: left;
-    text-indent: 1vw;
-    height: 4.6vh;
-    line-height: 4.6vh;
+    text-indent: 10px;
+    height: 70px;
+    line-height: 70px;
     color: black;
+    margin: 0;
     position: relative;
-    border-bottom: 1px solid black;
+    //border-bottom: 1px solid black;
   }
 
   .list {
-    height: 60vh;
+    //height: 100%;
     padding: 0;
     margin: 0;
     overflow-y: auto;
-
+    height: 60vh;
+    //background-color: darkseagreen;
     .left {
       list-style: none;
       text-align: left;
       display: flex;
       align-items: center;
-      //background-color: black;
-      margin-bottom: 0.5vw;
+    //background-color: black; margin-bottom: 0.5vw;
     }
 
     .right {
@@ -610,8 +663,7 @@ const detail = ()=>{
       display: flex;
       justify-content: flex-end;
       align-items: center;
-      //background-color: #72767b;
-      margin-bottom: 0.5vw;
+    //background-color: #72767b; margin-bottom: 0.5vw;
     }
 
     img {
@@ -620,11 +672,11 @@ const detail = ()=>{
     }
 
     .d {
-      //margin-left: 0.5vw;
-      color: black;
+    //margin-left: 0.5vw; color: black;
       display: flex;
-      //position: relative;
-      .c,.c1 {
+    //position: relative;
+
+      .c, .c1 {
         padding: 0 1vh; /* 水平方向的内边距 */
         border-radius: 0.3vw;
         display: inline-block; /* 使得c元素可以自适应内容 */
@@ -637,18 +689,23 @@ const detail = ()=>{
           display: inline-block;
           white-space: break-spaces; /* 允许换行 */
           max-width: 35vw; /* 设置最大宽度，根据需要调整 */
-          font-family: 华文新魏,serif;
+          font-family: 华文新魏, serif;
         }
 
 
       }
+
       .c {
         background-color: #95ec69;
+        color: black;
+        //opacity: 0.4;
         transition: all 0.3s ease; /* 添加过渡效果 */
       }
 
       .c1 {
         background-color: #ffffff;
+        //opacity: 0.4;
+        color: black;
         transition: all 0.3s ease;
       }
 
@@ -668,7 +725,8 @@ const detail = ()=>{
 
   .di {
     position: relative;
-
+    height: 30vh;
+    width: 100%;
     .xl {
       width: 4vw;
       height: 0;
@@ -682,78 +740,155 @@ const detail = ()=>{
     }
 
     textarea {
+      position: absolute;
       letter-spacing: 1px;
-      margin-top: 6vh;
-      width: 98%;
-      line-height: 1.5;
+      //margin-top: 30px;
       resize: none;
       font-size: 1vw;
       border: none;
-      color: black;
+      color: white;
       font-weight: 700;
       font-family: Verdana, serif;
       outline: none;
-      caret-color: black;
+      caret-color: white;
       text-indent: 0.1vw;
-      height: 19vh;
-      background-color: #cfd9df;
-      border-top: 1px solid black;
+      width: 98%;
+      background-color: rgb(64, 65, 68);
+      opacity: 0.4;
+      border-radius: 0.4vw;
+      left: 50%;
+      top: 20%;
+      height: 20vh;
+      transform: translateX(-50%);
+      box-shadow: 0 0 4px rgba(255, 255, 255, 0.5);
     }
-
-    button {
+    button{
       position: absolute;
-      bottom: 1vh;
-      right: 2vw;
+      bottom: 3vw;
+      right:1.5vw;
       border: none;
-      width: 7vw;
-      height: 5vh;
+      width: 70px;
+      height: 50px;
       color: green;
       font-weight: 700;
       border-radius: 0.5vw;
       cursor: pointer;
+      background-color: white;
+      transition: all 0.5s ;
     }
 
-    button:active {
-      background-color: #cfd9df;
+    button:hover {
+      background-color:green ;
+      color: white;
+      transition: all 0.5s ;
     }
+
+
   }
 
 }
 
-  .groupInfo{
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.18); /* 叠加模糊阴影效果 */
-    //background-color: yellow;
-    display: grid;
-    grid-template-columns: 4vw 4vw 4vw;
-    border-radius: 0.5vw;
-    grid-template-rows: 4vw 4vw 4vw;
-    width: 20vw;
-    padding: 1vw;
-    margin: 0 auto;
-    .info{
-      display: flex;
-      flex-direction: column;
-      //background-color: yellow;
-      align-items: center;
-      span{
-        width: 3vw;
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-      }
-      img{
-        width: 3vw;
-        height: 5.5vh;
-        border-radius: 0.5vw;
-        cursor: pointer;
-        transition: all 0.3s ease-in-out; /* 添加过渡效果 */
-      }
-      img:hover{
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.7); /* 叠加模糊阴影效果 */
-        transition: all 0.3s ease; /* 添加过渡效果 */
-      }
+.groupInfo {
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.18); /* 叠加模糊阴影效果 */
+  display: grid;
+  grid-template-columns: 4vw 4vw 4vw;
+  border-radius: 0.5vw;
+  grid-template-rows: 4vw 4vw 4vw;
+  width: 20vw;
+  padding: 1vw;
+  margin: 0 auto;
+  .info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 7vh;
+    position: relative;
+    span {
+      width: 3vw;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
     }
 
+    img {
+      width: 3vw;
+      min-height: 4vh;
+      height: 5.5vh;
+      border-radius: 0.5vw;
+      cursor: pointer;
+      transition: all 0.3s ease-in-out; /* 添加过渡效果 */
+    }
+
+    img:hover {
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.7); /* 叠加模糊阴影效果 */
+      transition: all 0.3s ease; /* 添加过渡效果 */
+    }
+  }
+  .user-info-popup {
+    position: absolute;
+    background: whitesmoke;
+    border: 1px solid #ddd;
+    box-shadow: 0 0.4vw 0.8vw rgba(0, 0, 0, 0.1);
+    padding: 1vw;
+    border-radius: 0.5vw;
+    right: 2vw;
+    width: 50%;
+    margin: 0;
+    top: 53%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: grid;
+    //grid-template-columns: 5vw 5vw 5vw;
+    grid-template-rows:4vw 4vw 5vw;
+    height: 27vh;
+    .showInfo{
+      display: flex;
+      align-items: center;
+      img{
+        width: 2vw;
+        height: 4vh;
+        border-radius: 0.5vw;
+        margin-right: 0.5vw;
+      }
+      p{
+        color: black;
+      }
+    }
+    .other{
+      display: flex;
+      flex-direction: column;
+      p{
+        display: grid;
+        grid-auto-rows: 2vw 2vw 2vw;
+        text-align: left;
+        color: #72767b;
+      }
+    }
+    .func{
+      display: grid;
+      grid-template-columns: 5vw 5vw 5vw;
+      width: 100%;
+      height: 10vh;
+      margin-top: 3vh;
+      div{
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: initial;
+        p{
+          color: black;
+          margin-top: 0.5vh;
+        }
+        transition: all 0.5s;
+      }
+      div:hover{
+        border-radius: 0.5vw;
+        box-shadow: 0 0.4vw 0.8vw rgba(0, 0, 0, 0.1);
+        transition: all 0.5s;
+      }
+    }
   }
 
+}
 </style>

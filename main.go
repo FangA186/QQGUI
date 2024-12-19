@@ -8,6 +8,7 @@ import (
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"github.com/wailsapp/wails/v2/pkg/options/windows"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"log"
 )
@@ -68,6 +69,14 @@ func main() {
 				log.Println("Received event data:", optionalData)
 			})
 			runtime.WindowSetMinSize(ctx, 800, 600)
+		},
+		//BackgroundColour: options.NewRGB(62, 206, 174),
+		Windows: &windows.Options{WebviewIsTransparent: true,
+
+			WindowIsTranslucent:               true,
+			BackdropType:                      windows.BackdropType(3),
+			DisableWindowIcon:                 true,
+			DisableFramelessWindowDecorations: true,
 		},
 	})
 	if err != nil {

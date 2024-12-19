@@ -52,6 +52,7 @@ const toggleCheckbox = (item) => {
 
 // 处理接收到的事件
 function handleClear(data) {
+  console.log(data)
   if (data.message === false) {
     showmessages.value = data.message
     showGroup.value = false
@@ -125,15 +126,18 @@ const CreateRoomSure = async () => {
 <template>
   <div id="index">
     <div class="navigation_bar">
-      <div class="img_div">
-        <img :src="avatar" alt="">
-      </div>
-      <LeftNav></LeftNav>
+      <LeftNav>
+        <template #img1>
+          <div class="img_div">
+            <img :src="avatar" alt="">
+          </div>
+        </template>
+      </LeftNav>
     </div>
     <div class="chat_search">
       <Search @clear="handleClear">
         <template #action-icon>
-          <svg class="icon iconadd" aria-hidden="true" font-size="25" @click="createGroup">
+          <svg class="icon" style="height: 20px;width: 20px;position: absolute;right: -8px;top: 1px;" aria-hidden="true" @click="createGroup">
             <use xlink:href="#icon-jiahao"></use>
           </svg>
         </template>
@@ -174,26 +178,21 @@ const CreateRoomSure = async () => {
 #index {
   width: 100%;
   height: 100%;
-  background-color: #cfd9df;
   display: flex;
-
+  //background-color: #409eff;
   .navigation_bar {
-    width: 3%;
     height: 100%;
-    background-color: #2e2e2e;
-
+    width: 50px;
     .img_div {
       width: 100%;
-
       img {
-        width: 80%;
-        height: 2.3vw;
-        margin-top: 1vh;
-        image-rendering: -moz-crisp-edges; /* Firefox */
-        image-rendering: -o-crisp-edges; /* Opera */
-        image-rendering: -webkit-optimize-contrast;
-        image-rendering: crisp-edges;
-        -ms-interpolation-mode: nearest-neighbor; /* IE (non-standard property) */
+        border-radius: 5px;
+        max-width: 23px;
+        min-width: 32px;
+        //height: 2.3vw;
+        max-height:23px;
+        min-height: 32px;
+        margin-top: 10px;
       }
     }
   }
@@ -201,11 +200,13 @@ const CreateRoomSure = async () => {
   .chat_search {
     display: flex;
     flex-direction: column;
-    width: 18%;
-    background-color: #f7f7f7;
-
+    //width: 21%;
+    max-width: 26%;
+    //background-color: #409eff;
     .messages {
+      width: 100%;
       height: 95vh;
+      //overflow-y: auto;
     }
   }
 
@@ -219,7 +220,7 @@ const CreateRoomSure = async () => {
   }
 
   button:hover {
-    background-color: black;
+    //background-color: black;
     color: white;
     box-shadow: 0 0 10px black;
     transition: all 0.5s;
@@ -229,7 +230,6 @@ const CreateRoomSure = async () => {
     width: 100%;
     padding: 0;
     margin: 0;
-
     li {
       text-align: left;
       list-style: none;
@@ -266,7 +266,7 @@ const CreateRoomSure = async () => {
   .chat_frame {
     display: flex;
     flex-direction: column;
-    width: 79%;
+    width: 83%;
   }
 }
 </style>
