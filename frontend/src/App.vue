@@ -41,8 +41,6 @@ const changeBackgroundImage = (num) => {
   width: 100%;
   height: 100%;
   margin: auto;
-  background-size: 100% 100%;
-  background-origin: content-box;
   display: flex;
   align-items: center;
   //background-color: #409eff;

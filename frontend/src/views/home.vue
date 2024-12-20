@@ -444,7 +444,7 @@ const navtoSend = ()=>{
           <button @click="sendMessage">发送(enter)</button>
         </div>
       </div>
-      <el-drawer v-model="detailShow">
+      <el-drawer v-model="detailShow" style="background: none">
         <template #default>
           <div class="groupInfo">
             <div class="info" v-for="(item,index) in oneinfo.userInfo" @click="userInfo(item,$event)">
@@ -465,31 +465,25 @@ const navtoSend = ()=>{
               </div>
               <div class="func">
                 <div class="sendMessage" @click="navtoSend">
-                  <svg class="icon wj" aria-hidden="true" style="cursor: pointer" font-size="1.5vw" @click="choiceFile">
+                  <svg class="icon wj" aria-hidden="true" style="cursor: pointer" font-size="20px" @click="choiceFile">
                     <use xlink:href="#icon-fasong2"></use>
                   </svg>
                   <p><strong>发消息</strong></p>
                 </div>
                 <div class="voice">
-                  <svg class="icon wj" aria-hidden="true" style="cursor: pointer" font-size="1.5vw" @click="choiceFile">
+                  <svg class="icon wj" aria-hidden="true" style="cursor: pointer" font-size="20px" @click="choiceFile">
                     <use xlink:href="#icon-dianhua"></use>
                   </svg>
                   <p><strong>语音聊天</strong></p>
                 </div>
                 <div class="video">
-                  <svg class="icon wj" aria-hidden="true"  style="cursor: pointer" font-size="1.5vw" @click="choiceFile">
+                  <svg class="icon wj" aria-hidden="true"  style="cursor: pointer" font-size="20px" @click="choiceFile">
                     <use xlink:href="#icon-shipin1"></use>
                   </svg>
                   <p><strong>视频聊天</strong></p>
                 </div>
               </div>
             </div>
-          </div>
-        </template>
-        <template #footer>
-          <div style="flex: auto">
-            <el-button @click="detailShow = false">cancel</el-button>
-            <el-button type="primary" @click="detailShow= false">confirm</el-button>
           </div>
         </template>
       </el-drawer>
@@ -564,23 +558,19 @@ const navtoSend = ()=>{
   //height: 92vh;
   overflow-y: auto;
   li {
-    //border-bottom: 1px solid black;
-  //background-color: #409eff; transition: all 0.3s ease;
+  transition: all 0.3s ease;
+    background:none;
     height: 55px;
-    //background-color: #409eff;
+    display: flex;
+    align-items: center;
     .image-container {
       width: 100%;
       display: flex;
-      //background-color: #eae7e7;
-      //height:40px;
       transition: all 0.5s;
       .im {
         display: flex;
         flex-wrap: wrap; /* 允许换行 */
         width: 55px;
-        height: 55px;
-        //background-color: #409eff;
-        //padding: 3px;
         .image-item {
           display: flex;
           flex-wrap: wrap;
@@ -612,7 +602,9 @@ const navtoSend = ()=>{
 
   li:hover {
     opacity: 0.8;
-    //box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    //border-radius: 10px;
+    background: darkseagreen;
+    //box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
   }
 }
 
@@ -648,7 +640,9 @@ const navtoSend = ()=>{
     margin: 0;
     overflow-y: auto;
     height: 60vh;
-    //background-color: darkseagreen;
+    //background-color: rgba(143,188,143,0.7);
+    border-radius: 5px;
+    //opacity: 0.5;
     .left {
       list-style: none;
       text-align: left;
@@ -667,8 +661,9 @@ const navtoSend = ()=>{
     }
 
     img {
-      width: 2vw;
-      height: 4vh;
+      width: 30px;
+      height: 30px;
+      border-radius: 5px;
     }
 
     .d {
@@ -685,7 +680,7 @@ const navtoSend = ()=>{
           word-wrap: break-word;
           word-break: break-all;
           height: auto; /* 让高度自动适应内容 */
-          line-height: 4vh;
+          line-height: 30px;
           display: inline-block;
           white-space: break-spaces; /* 允许换行 */
           max-width: 35vw; /* 设置最大宽度，根据需要调整 */
@@ -791,30 +786,32 @@ const navtoSend = ()=>{
 .groupInfo {
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.18); /* 叠加模糊阴影效果 */
   display: grid;
-  grid-template-columns: 4vw 4vw 4vw;
-  border-radius: 0.5vw;
-  grid-template-rows: 4vw 4vw 4vw;
+  grid-template-columns:50px 50px 50px;
+  border-radius: 5px;
+  grid-template-rows: 50px 50px 50px;
+  background: white;
   width: 20vw;
-  padding: 1vw;
+  padding: 10px;
   margin: 0 auto;
+  opacity: 0.7;
   .info {
     display: flex;
     flex-direction: column;
     align-items: center;
-    min-height: 7vh;
+    min-height: 70px;
     position: relative;
+    justify-content: center;
     span {
-      width: 3vw;
+      width: 50px;
       overflow: hidden;
       white-space: nowrap;
       text-overflow: ellipsis;
     }
 
     img {
-      width: 3vw;
-      min-height: 4vh;
-      height: 5.5vh;
-      border-radius: 0.5vw;
+      width: 40px;
+      height: 40px;
+      border-radius: 05px;
       cursor: pointer;
       transition: all 0.3s ease-in-out; /* 添加过渡效果 */
     }
@@ -832,23 +829,23 @@ const navtoSend = ()=>{
     padding: 1vw;
     border-radius: 0.5vw;
     right: 2vw;
-    width: 50%;
+    width: 20vw;
     margin: 0;
-    top: 53%;
+    top:407px;
     left: 50%;
     transform: translate(-50%, -50%);
     display: grid;
     //grid-template-columns: 5vw 5vw 5vw;
     grid-template-rows:4vw 4vw 5vw;
-    height: 27vh;
+    height: 250px;
     .showInfo{
       display: flex;
       align-items: center;
       img{
-        width: 2vw;
-        height: 4vh;
-        border-radius: 0.5vw;
-        margin-right: 0.5vw;
+        width:40px;
+        height: 40px;
+        border-radius: 5px;
+        margin-right: 5px;
       }
       p{
         color: black;
@@ -857,27 +854,37 @@ const navtoSend = ()=>{
     .other{
       display: flex;
       flex-direction: column;
+      margin-top: 10px;
       p{
         display: grid;
-        grid-auto-rows: 2vw 2vw 2vw;
+        grid-auto-rows: 30px 30px 30px;
         text-align: left;
         color: #72767b;
       }
     }
     .func{
       display: grid;
-      grid-template-columns: 5vw 5vw 5vw;
-      width: 100%;
-      height: 10vh;
-      margin-top: 3vh;
+      grid-template-columns: 80px 80px 80px;
+      width:100%;
+      height: 70px;
+      //background-color: #67c23a;
+      position: absolute;
+      bottom: 10px;
+      //background-color: #409eff;
+      margin-bottom: 5px;
       div{
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         cursor: initial;
+        //width: 10vw;
         p{
+          //width: 80px;
+          //display: block;
+          //background-color: #f7ba2a;
           color: black;
+          text-align: center;
           margin-top: 0.5vh;
         }
         transition: all 0.5s;
